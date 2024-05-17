@@ -17,8 +17,12 @@ def read_dataframe(path):
     # Calculate the hire duration
     df["duration"] = df["tpep_dropoff_datetime"] - df["tpep_pickup_datetime"]
     df["duration"] = df["duration"].apply(lambda td: round(td.total_seconds()/60, 4))
+    print(df["duration"].std())
     # Filter out any bad records
+    before = len(df)
     df = df[(df.duration >= 1) & (df.duration <= 60)]
+    after = len(df)
+    print(f"% change: {round((after/before)*100,2)}")
     df = df.dropna(subset=["PULocationID","DOLocationID"]).reset_index(drop=True)
     # Clean up data types
     df = df.astype({"PULocationID":int,"DOLocationID":int})
@@ -26,8 +30,8 @@ def read_dataframe(path):
     df = df.astype({"PULocationID":str,"DOLocationID":str})
     return df
 
-df_train = read_dataframe("data/train/yellow_tripdata_2021-01.parquet")
-df_val = read_dataframe("data/val/yellow_tripdata_2021-02.parquet")
+df_train = read_dataframe("data/train/yellow_tripdata_2023-01.parquet")
+df_val = read_dataframe("data/val/yellow_tripdata_2023-02.parquet")
 
 # Select a subset of columns
 train_cols,target_col = ["PULocationID","DOLocationID"],["duration"] #"PU_DO","trip_distance"
@@ -73,4 +77,3 @@ lr.fit(X_train,y_train)
 y_pred = lr.predict(X_val)
 mse = root_mean_squared_error(y_val, y_pred)
 print(f"Ridge Regression MSE:\t {mse:.4f}")
-# print(pd.DataFrame(np.stack([y_val,y_pred],axis=1)))
