@@ -2,4 +2,9 @@ data
 envs
 key-pairs
 models
+unused
 zmcp
+
+__pycache__
+*/__pycache__
+*/*/__pycache__
