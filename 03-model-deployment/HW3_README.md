@@ -25,4 +25,7 @@ Create a virtual docker environment with the docker compose file. Change the dir
 
 4. In the mage UI scripts, the mlflow uri is accessed at `http://mlflow:3500`. Autolog was giving me issues with the sklearn version in the mage docker environment, so I logged artifacts manually. Artifacts were logged using a temporary folder name, so it was complex to save the preprocessing dictVec and model in different folders.
 
-The files to replicate the assignment are in the mage setup and the docker container can be easily replicated.
+The files to replicate the assignment are in the ***`./mage_setup`*** folder and the docker container can be easily replicated.
+
+### Clean up.
+Shut down the docker container with `Ctrl+C` and `docker-compose down` to destroy the containers. Use `docker ps -a` to see the image ids and delete them or use the Docker Desktop GUI as desired. To recreate the environment, run `./scripts/start.sh`.
