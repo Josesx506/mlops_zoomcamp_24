@@ -7,11 +7,14 @@ ARG USER_CODE_PATH=${MAGE_CODE_PATH}/${PROJECT_NAME}
 WORKDIR ${MAGE_CODE_PATH}
 
 # Copy the prerequisite files to the mage project folder
-COPY mage_docker ${PROJECT_NAME}
+COPY mage_setup/settings.yaml ${USER_CODE_PATH}/
+COPY mage_setup/requirements.txt ${USER_CODE_PATH}/
+COPY mage_setup/utils ${USER_CODE_PATH}/
 
 ENV USER_CODE_PATH=${USER_CODE_PATH}
 
 # Install custom Python libraries and dependencies for your project.
+RUN pip install --upgrade pip
 RUN pip3 install -r ${USER_CODE_PATH}/requirements.txt
 
 ENV PYTHONPATH="${PYTHONPATH}:${MAGE_CODE_PATH}/${PROJECT_NAME}"
