@@ -5,6 +5,11 @@ models
 unused
 zmcp
 
+03-model-deployment/mage_data
+03-model-deployment/mlflow
+03-model-deployment/mlops
+
 __pycache__
 */__pycache__
 */*/__pycache__
+*/*/*/__pycache__
