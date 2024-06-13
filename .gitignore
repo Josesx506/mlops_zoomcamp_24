@@ -8,6 +8,7 @@ zmcp
 03-orchestration/mage_data
 03-orchestration/mlflow
 03-orchestration/mlops
+04-model-deployment/deploy
 
 __pycache__
 */__pycache__
