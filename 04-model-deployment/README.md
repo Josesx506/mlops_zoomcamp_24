@@ -114,7 +114,8 @@ Because the container is run in interactive mode, muting the output throws error
     - Use `predict_mlflow_server.py` to use the remote EC2 model local on a different month.
     - Use `predict_s3_model.py` to use the remote mlflow model that has been saved to an s3 bucket in case the mlflow server shuts down.
     - Use `predict_flask.py` to run the remote mlflow model that has been saved to an s3 bucket on a local flask server. You can test the server with the curl query above.
-11. You can dockerize it and put the flask as a backend endpoint. The docker environment can then be passed to AWS ECR, and hosted as a lambda function.
+11. You can dockerize it and put the flask as a backend endpoint. The docker environment can then be passed to AWS ECR, and hosted as a lambda function. More on this is described in the [scoring](#model-scoring) section.
+12. If the remote server disconnects and you can't find your mlflow server again, use `ps aux | grep mlflow` to find the process id (PID), and stop it with `kill <PID>`. This ensures your server is not running indefinitely for the exercise. Don't forget to terminate any additional **AWS** resources that were provisioned.
 
 
 ### Model Scoring
