@@ -1,8 +1,19 @@
 import pickle
+import mlflow
 from flask import Flask, request, jsonify
 
-with open("model.bin", "rb") as f_in:
-    (dv, model) = pickle.load(f_in)
+tracking_uri = "http://ec2-100-26-136-60.compute-1.amazonaws.com:5000"
+RUN_ID = "463c2a7966b84dd5b84b0ad3ca7c64ba"
+S3_BUCKET = "mlflow-artifacts-joses"
+
+def load_model(mlflow_uri,s3_bucket,run_id):
+    mlflow.set_tracking_uri(mlflow_uri)
+    model_uri = f"s3://{s3_bucket}/1/{run_id}/artifacts/model"
+    loaded_model = mlflow.pyfunc.load_model(model_uri)
+    return loaded_model
+
+model = load_model(tracking_uri,S3_BUCKET, RUN_ID)
+
 
 app = Flask("duration_prediction")
 
@@ -14,8 +25,7 @@ def prepare_features(ride):
     return features
 
 def predict(features):
-    X = dv.transform(features)
-    preds = model.predict(X)
+    preds = model.predict(features)
     return preds[0]
 
 @app.route("/predict", methods=["POST"])

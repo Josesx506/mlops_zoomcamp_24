@@ -82,8 +82,6 @@ Because the container is run in interactive mode, muting the output throws error
 - Get the container id and stop it with `docker container stop <CONTAINER_ID>`
 - Test the endpoint with curl as described above. If it runs, your script is good. 
 
-<br><br>
-
 ***Note***: The sklearn version in the environment is `v1.5.0` vs `v1.0.2` used in the video exercises.
 
 ### MLFlow EC2
@@ -101,7 +99,16 @@ Because the container is run in interactive mode, muting the output throws error
 5. It comes with python3 installed so I just installed pip with `sudo yum install python3-pip`, then `pip install pipenv`
 6. Install the server dependencies with`pipenv install scikit-learn mlflow numpy pandas pyarrow boto3` and activate the virtual environment with `pipenv shell`.
 7. Create an S3 bucket. I created one named `mlflow-artifacts-joses`.
-8. Launch an MLFlow server using the bucket to store artifacts `mlflow server -p 5000 --backend-store-uri=sqlite:///mlflow.db --default-artifact-root=s3://mlflow-artifacts-joses/`.
+8. Launch an MLFlow server using the bucket to store artifacts `mlflow server --host 0.0.0.0 -p 5000 --backend-store-uri=sqlite:///mlflow.db --default-artifact-root=s3://mlflow-artifacts-joses/`.
+    - Set up inbound security rules to allow you access on the desired port, in this case `:5000`.
+    - You can also approve traffic from specific ip addresses like your personal ip - Use https://checkip.amazonaws.com/ to confirm your ip address.
+    - Sometimes Chrome might just prevent you from connecting to the instances even after inbound rules have been approved. You can clear cache.
+    - Click on the public dns link and append the port as a suffix to access the mlflow server. It should resemble `http://ec2-100-26-136-60.compute-1.amazonaws.com:5000` 
+9. Train the model using the `train_rf.ipynb` notebook so that the model is saved on the remote server and you can access it from your local script.
+10. On your local computer, navigate to the `mlflow-webservice` directory and use the different scripts
+    - Use `predict_mlflow_server.py` to use the remote EC2 model local on a different month.
+    - Use `predict_s3_model.py` to use the remote mlflow model that has been saved to an s3 bucket in case the mlflow server shuts down.
+    - Use `predict_flask.py` to run the remote mlflow model that has been saved to an s3 bucket on a local flask server. You can test the server with the curl query above.
 
 
 
