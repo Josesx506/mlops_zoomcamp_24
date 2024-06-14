@@ -1,4 +1,12 @@
-### Model deployment
+## Model deployment
+Topics discussed include
+- [Environment Setup](#environment-setup)
+- [Flask Setup](#flask-setup)
+- [Docker Setup](#docker-setup)
+- [MLFlow EC2](#mlflow-ec2)
+- [Model Scoring](#model-scoring)
+
+### Environment Setup
 A virtual environment was created with `pipenv`. 
 - First create a new virtual environment `python -m venv deploy`
 - Activate the virtual environment `source deploy/bin/activate`
@@ -6,10 +14,6 @@ A virtual environment was created with `pipenv`.
 - Install pipenv `pip install pipenv`
 - Install the packages with pipenv `pipenv install scikit-learn==1.0.2 flask --python=3.12`. Unlike python-dotenv, pipenv allows you to specify the python version.
 
-Updated Pipfile.lock (a092f96c3ff9485f3a8e105218e9b623c8cee98c76a02662b0212b3d4c5ac691)!
-Updated Pipfile.lock (cde4ebbb92f751b179709139ec54dbff122291b60738db5d879459e3b8acea3d)!
-
-### Environment Setup
 Normally, pipenv creates its own virtual environment and steps 1-3 above can be ignored but I didn't want too many venv managers install to my global python environment so I used a virtual environment. To activate the pipenv virtual environment, execute `pipenv shell` (like *poetry*). Alternatively, run a command inside the virtualenv with `pipenv run`.<br><br>
 
 Pipenv creates a ***Pipfile*** and ***Pipfile.lock*** for managing dependency installations. You can install development dependencies with `pipenv install --dev requests` <br><br>
@@ -18,7 +22,7 @@ To reduce the length of the prefix in terminal, run `PS1="> "`. This removes all
 
 I used the lin_reg.bin file from the zoomcamp repo and used a lower scikit-learn version than HW1. 
 
-### Flask
+### Flask Setup
 After creating the simple flask app in `flask_predict.py`, use the bash script to start and run it in background locally. 
 - Give the script permisssions `chmod +x background_flask.sh`
 - Launch the server with `./background_flask.sh start`
@@ -46,7 +50,7 @@ To use a production server, use `gunicorn` web server instead of flask.
 
 You can test the endpoint with the python script or curl.
 
-### Docker
+### Docker Setup
 A base image has already been provided with the required python version and trained model inside the file. Copy the environment files and prediction scripts into the docker environment and use a custom tag to create the image. There's no need to set a workdir because the baseimage already set it to `app` <br>
 The dockerfile I used is 
 ```docker
@@ -80,7 +84,8 @@ ENTRYPOINT [ "gunicorn", "--bind=0.0.0.0:2024", "predict:app" ]
 Because the container is run in interactive mode, muting the output throws errors. Run the container without interactive mode `-it` and minimize the stderr with `docker run --rm -p 2024:2024 zmcp24-ride-dur:v1 &`, 
 - Check the running containers with `docker ps -a`
 - Get the container id and stop it with `docker container stop <CONTAINER_ID>`
-- Test the endpoint with curl as described above. If it runs, your script is good. 
+- Test the endpoint with curl as described above. If it runs, your script is good.
+- For docker environments, you can include environment variables from your *.env* file with `-e "${ENV_VAR}"` as an argument to docker run.
 
 ***Note***: The sklearn version in the environment is `v1.5.0` vs `v1.0.2` used in the video exercises.
 
@@ -109,11 +114,51 @@ Because the container is run in interactive mode, muting the output throws error
     - Use `predict_mlflow_server.py` to use the remote EC2 model local on a different month.
     - Use `predict_s3_model.py` to use the remote mlflow model that has been saved to an s3 bucket in case the mlflow server shuts down.
     - Use `predict_flask.py` to run the remote mlflow model that has been saved to an s3 bucket on a local flask server. You can test the server with the curl query above.
+11. You can dockerize it and put the flask as a backend endpoint. The docker environment can then be passed to AWS ECR, and hosted as a lambda function.
+
+
+### Model Scoring
+1. Navigate to the `model_scoring` folder. Create a script to make the predictions and dockerize the script.
+2. Register the environmet variables with `source.env`. Typically shouldn't be uploaded but I tracked it with git for example purposes. I also created a `aws.env` environment file which I sourced but didn't track with git.
+3. Build the image 
+    ```bash
+    docker build --build-arg AWS_KEY=$AWS_KEY --build-arg AWS_SECRET_KEY=$AWS_SECRET_KEY --build-arg AWS_REGION=$AWS_REGION -t zmcp24-ride-dur:v2 .
+    ```
+4. Run the container with 
+    ```bash
+    docker run --rm -p 2024:2024 -e TRACKING_URI=$TRACKING_URI -e RUN_ID=$RUN_ID \
+    -e S3_BUCKET=$S3_BUCKET zmcp24-ride-dur:v2 &
+    ```
+5. Test the endpoint with curl.
+    ```bash
+    curl -X POST -H "Content-Type: application/json" -d '{
+        "year": "2023",
+        "month": "3",
+        "taxi": "green" 
+    }' http://0.0.0.0:2024/predict
+    ```
+    It should return a json like 
+    ```json
+    {
+        "mean trip dur":"13.1735 minutes",
+        "score":"5.8902"
+    }
+    ```
+Something similar will be replicated in the assignment but it wouldn't reference the remote s3 bucket. It will use a provided pickle model instead.
 
 
 
-### Homework
-Use the `starter.ipynb` notebook
-1. Check the prediction standard deviation with `np.std()` - 6.24
-2. Check the file size with `ls` - 68641674
+
+
+
+
+
+
+
+
+
+
+
+
+
 

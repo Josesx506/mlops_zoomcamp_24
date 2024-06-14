@@ -9,6 +9,7 @@ zmcp
 03-orchestration/mlflow
 03-orchestration/mlops
 04-model-deployment/deploy
+04-model-deployment/model_scoring/aws.env
 
 __pycache__
 */__pycache__
