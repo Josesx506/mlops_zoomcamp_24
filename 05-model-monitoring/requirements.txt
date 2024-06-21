@@ -1,0 +1,9 @@
+evidently==0.4.27
+ipykernel
+numpy==1.26.4
+pandas
+prefect==2.19.5
+pyarrow
+requests
+scikit-learn
+tqdm

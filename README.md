@@ -10,3 +10,7 @@ Launch MLFlow UI with `mlflow ui`. I install postgres locally on my laptop and u
 - You can also use sqlite for local tests easily with `mlflow ui --backend-store-uri sqlite://mlflow.db`
 
 Trained models that have been logged to a remove registry and artifact bucket remotely can be accessed using the model uri.
+
+#### Caching
+Caching allows storage of data into local memory. User keys can be used to uniquely differentiate global vs user specific data in cache. The keys should be hashed for security purposes.
+Cache Memoization allows caching of a function as well as its input arguments, so that the function is only recomputed whenever the arguments change.

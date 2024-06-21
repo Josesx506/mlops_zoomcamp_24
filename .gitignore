@@ -10,6 +10,8 @@ zmcp
 03-orchestration/mlops
 04-model-deployment/deploy
 04-model-deployment/model_scoring/aws.env
+05-model-monitoring/data
+05-model-monitoring/workspace
 
 __pycache__
 */__pycache__
