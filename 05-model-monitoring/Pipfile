@@ -16,6 +16,10 @@ scikit-learn = "*"
 tqdm = "*"
 ipykernel = "*"
 matplotlib = "*"
+sqlalchemy = "*"
+flask-sqlalchemy = "*"
+flask-migrate = "*"
+psycopg2 = "*"
 
 [dev-packages]
 

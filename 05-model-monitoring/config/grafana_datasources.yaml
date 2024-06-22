@@ -11,6 +11,6 @@ datasources:
     database: test
     user: postgres
     secureJsonData:
-      password: "example"
+      password: 'example'
     jsonData:
-      sslmode: "disable"
+      sslmode: 'disable'

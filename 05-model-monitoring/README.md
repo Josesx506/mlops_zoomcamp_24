@@ -25,3 +25,9 @@ The evidently report can be updated as a batch job using a cron schedule.
 
 
 ### Grafana Dashboard
+- Create a dummy test postgres db and table.
+- Make sure your `config/grafana_datasources.yaml` is properly configured to match your docker-compose files so that grafana knows which dashboard to extract data from.
+- Execute the `dummy_metrics.py` script to create the dummy dataset, insert entries into the db with a time delay,this way, you can see the data coming in periodically into the Grafana dashboard.
+    - **Note** - Using SQLAlchemy and grafana simulataneously causes sqlalchemy and the grafana admin users to clash, so it is better to connect with pyscopg directly.
+- If the UI query selector in grafana doesn't detect your table, use the code query selector instead with `SELECT * FROM dummy_metrics LIMIT 50;`. This is what helped me visualize my dashboard
+- Don't forget to save the dashboard panel once you're done.
