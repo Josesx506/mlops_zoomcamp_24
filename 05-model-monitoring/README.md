@@ -21,7 +21,16 @@ When you login to the UI, the configured dashboards, reports, and any test sessi
 - ***Note***: When creating a report, a timestamp value (daily resolution) has to be included, The data passed to the report object should be limited to that day unless, it will associate multiple days of data to the specified timestamp.
 
 The data from the report is referred to as `current` when creating the dashboard, and the metrics can be viewed programmatically with `regular_report.as_dict()`. <br><br>
-The evidently report can be updated as a batch job using a cron schedule.
+The evidently report can be updated as a batch job using a cron schedule with prefect, mage, or github actions.
+
+### Monitoring Tests
+Tests for data and prediction drift can be implemented. 
+- E.g. for data, we expect the training and predicted data to have similar distributions if we want the model to perform well. 
+    - By measuring the drift distance using methods like the `normalized Wassertein Distance` and histograms we can visualize how the distributions change.
+- For models, we can also measure metrics like accuracy or distance based drift methods to figure out when to retrain the models.
+- The tests can be performed using evidently `TestSuite()` or `Report()` objects and the results are best output as dictionaries. This way, we can programmatically extract drift ways and include automatic retrain triggers.
+- Tests like this also provide explanations for why model performance can decrease or increase. 
+
 
 
 ### Grafana Dashboard
@@ -31,3 +40,8 @@ The evidently report can be updated as a batch job using a cron schedule.
     - **Note** - Using SQLAlchemy and grafana simulataneously causes sqlalchemy and the grafana admin users to clash, so it is better to connect with pyscopg directly.
 - If the UI query selector in grafana doesn't detect your table, use the code query selector instead with `SELECT * FROM dummy_metrics LIMIT 50;`. This is what helped me visualize my dashboard
 - Don't forget to save the dashboard panel once you're done.
+- Dashboard schemas can be defined programmatically as `json` schemas and saved in the `./dashboards` directory, which will be passed into docker when creating the images.
+- If the dashboard doesn't *`auto-refresh`* automatically, you can always toggle it on for specified durations.
+- Although the data we were reading was from a saved dataframe, in a live scenario, I'll expect to read the data from a db
+    - Read the data from 2 dbs, the first table shows observed outages, while the second table shows predicted outages. The drift from both tables can then be mapped as evidently columns and used to create a report. ***Prediction drift*** can be monitored from the report with Grafana, and alerts can be triggered when the performance drops below  a threshold.
+- The scripts can also be passed into prefect workflows for orchestration purposes.
