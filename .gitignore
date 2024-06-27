@@ -12,6 +12,7 @@ zmcp
 04-model-deployment/model_scoring/aws.env
 05-model-monitoring/data
 05-model-monitoring/workspace
+06-best-practices/code
 
 __pycache__
 */__pycache__

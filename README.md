@@ -14,3 +14,16 @@ Trained models that have been logged to a remove registry and artifact bucket re
 #### Caching
 Caching allows storage of data into local memory. User keys can be used to uniquely differentiate global vs user specific data in cache. The keys should be hashed for security purposes.
 Cache Memoization allows caching of a function as well as its input arguments, so that the function is only recomputed whenever the arguments change.
+
+#### Learning
+- [ ] Orchestration and retraining pipelines
+- [ ] Statistical distribution of reference and current data (Data Drift)
+- [ ] Model Prediction Drift
+- [ ] Docker-compose for provisioning resources
+- [ ] Mocking in pytests
+    - AWS mocking with localStack
+
+- Bash commands to 
+    - cd to the directory of the script is `cd "$(dirname "$0")"`
+    - Date Fomat in bash `date +"%Y-%m-%dT%H:%M:%S"`
+    - Exit upon first interrupt encountered `set -e`
