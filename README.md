@@ -22,6 +22,7 @@ Cache Memoization allows caching of a function as well as its input arguments, s
 - [ ] Docker-compose for provisioning resources
 - [ ] Mocking in pytests
     - AWS mocking with localStack
+- [ ] Linting, Formatting, and Sorting
 
 - Bash commands to 
     - cd to the directory of the script is `cd "$(dirname "$0")"`
