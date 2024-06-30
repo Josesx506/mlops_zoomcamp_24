@@ -1,0 +1,8 @@
+services:
+  s3:
+    image: localstack/localstack
+    restart: always
+    ports:
+      - "4569:4566"
+    environment:
+      - SERVICES=s3

@@ -107,13 +107,19 @@ pre-commit sample-config > .pre-commit-config.yaml
 When a repo is created or cloned for the first time, the pre-commit hooks are not automatically installed and need to be initiated only once. Navigate to the `.git/` directory and run `pre-commit install` which creates a *pre-commit* file inside the `.git/hooks/pre-commit` folder. Now when files are added and committed, the pre-commit hook checks and modifies files with tools like isort and black. If it fails the pre-commit tests, some files are modified and need to be added again after changes have been fixed before final commits are made. If you google *isort/black/pytest precommit*, you can see the synthax for adding them to pre-commit files. You can also include arguments like package versions or specific pytest folders within the config file.
 
 ### Makefiles
-Makefiles are like key-value pair of alias and terminal commands. In the example below, we want the command `echo 123` to print to terminal when the alias `make run` is called.
+Makefiles are like key-value pair of alias and terminal commands. All terminal commands from setting up precommit hooks to running unittests, integration tests and code formatting can be setup within precommit hooks. In the example below, we want the command `echo 123` to print to terminal when the alias `make run` is called.
 ```bash
 run:
     echo 123
 ```
 The make program is installed by default on mac/linux but needs to be installed on Windows. Specific aliases can be made to depend on previous aliases e.g running pytests before deploying a ML webapp.
 ```bash
+setup:
+    pip install pipx
+    pipx install poetry
+    poetry add --group dev pre-commit
+    pre-commit install
+
 test:
     echo test1
 
