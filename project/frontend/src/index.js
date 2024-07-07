@@ -9,6 +9,7 @@ import "leaflet/dist/leaflet.css";
 import "./css/main.css";
 import { createJourneyForm } from "./utils/form";
 import { populateDropdown } from "./utils/helpers";
+import "./plugins/leaflet-mask"
 
 // Configure default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -30,8 +31,19 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
 }).addTo(map);
 
-// Load shapefile data
-const nycTaxiZoneLayer = new L.GeoJSON.AJAX("../../data/NYCTaxiZones.geojson", {
+// Load shapefile data. Use it to clip and shade the map
+const geoJsonPath = "../../data/NYCTaxiZones.geojson";
+L.mask(geoJsonPath, {
+    interactive: true, 
+    fitBounds: true,
+    restrictBounds: true,
+    fillOpacity:0.3,
+    fillColor:"#3b3b38",
+    weight: 0.5,
+    color: "black",
+}).addTo(map);
+
+const nycTaxiZoneLayer = new L.GeoJSON.AJAX(geoJsonPath, {
     style: function (feature) {
         return {
             color: "black",

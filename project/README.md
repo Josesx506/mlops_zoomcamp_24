@@ -1,4 +1,6 @@
 
+`npx webpack --watch`
+
 ### Data and Tools
 - [ ] [Maps](https://leafletjs.com/)
 - [ ] [Geocoding](https://smeijer.github.io/leaflet-geosearch/)
