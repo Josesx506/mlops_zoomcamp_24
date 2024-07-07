@@ -16,8 +16,8 @@
     "fullcalendar": "^6.1.13",
     "html-webpack-plugin": "^5.6.0",
     "leaflet": "^1.9.4",
+    "leaflet-ajax": "^2.1.0",
     "leaflet-geosearch": "^4.0.0",
-    "leaflet-map": "^0.2.1",
     "style-loader": "^4.0.0",
     "webpack": "^5.91.0",
     "webpack-cli": "^5.1.4"

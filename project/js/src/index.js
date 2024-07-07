@@ -1,13 +1,14 @@
 import "@fortawesome/fontawesome-free/js/all";
 import L from "leaflet";
-import { GeoSearchControl, OpenStreetMapProvider } from "leaflet-geosearch";
+import "leaflet-ajax";
 import "leaflet-geosearch/assets/css/leaflet.css";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import "leaflet/dist/leaflet.css";
 import "./css/main.css";
 import { createJourneyForm } from "./utils/form";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+import { populateDropdown } from "./utils/helpers";
 
 // Configure default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -20,7 +21,7 @@ L.Icon.Default.mergeOptions({
 const body = document.getElementById("content");
 
 let map = L.map("map", {
-    center: [40.773782, -73.88031],
+    center: [40.723782, -73.98031],
     zoom: 10});
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -29,43 +30,23 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     attribution: "&copy; <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>"
 }).addTo(map);
 
-const provider = new OpenStreetMapProvider();
-
-const startAddress = new GeoSearchControl({
-    provider: provider,
-    style: "bar",
-    showMarker: true,
-    showPopup: false,
-    retainZoomLevel: false,
-    animateZoom: true,
-    keepResult: true,
-    marker: {
-      icon: new L.Icon.Default(),
-      draggable: false,
+// Load shapefile data
+const nycTaxiZoneLayer = new L.GeoJSON.AJAX("../../data/NYCTaxiZones.geojson", {
+    style: function (feature) {
+        return {
+            color: "black",
+            fillColor: "yellow",
+            weight: 0.5,
+            opacity: 0.9,
+            fillOpacity: 0.05,
+        };
     },
-});
-
-const endAddress = new GeoSearchControl({
-    provider: provider,
-    style: "bar",
-    showMarker: true,
-    showPopup: false,
-    retainZoomLevel: false,
-    animateZoom: true,
-    keepResult: true,
-    marker: {
-      icon: new L.Icon.Default(),
-      draggable: false,
-    },
-});
-
-// console.log(startAddress.searchElement.form);
-// console.log(map._marker);
-
-// map.addControl(startAddress);
-// map.addControl(endAddress);
-
-
+    onEachFeature: function (feature, layer) {
+        layer.bindPopup(`Name: ${feature.properties.zone} ID: ${feature.properties.location_id}`);
+    }
+});  
+nycTaxiZoneLayer.addTo(map);
+let markerList = []; // List of active markers
 
 function dynamicEventListeners() {
     const addressForm = document.querySelector("#new-address-entry-cntr");
@@ -74,25 +55,22 @@ function dynamicEventListeners() {
     const endPoint = document.querySelector("#end-address");
     const endDropdown = document.querySelector("#end-address-dropdown");
 
-    async function populateDropdown(event, dropdown) {
-        const queryVal = event.target.value;
-        if (queryVal.length < 3) return;
-        const results = await provider.search({ query: queryVal });
 
-        dropdown.innerHTML = "";
+    function checkMarkers() {
+        const startX = parseFloat(startPoint.dataset.x);
+        const startY = parseFloat(startPoint.dataset.y);
+        const endX = parseFloat(endPoint.dataset.x);
+        const endY = parseFloat(endPoint.dataset.y);
 
-        // Populate dropdown with results
-        results.forEach((result, index) => {
-            const item = document.createElement("div");
-            item.classList.add("address-search-result")
-            item.textContent = result.label;
-            item.dataset.index = index;
-            item.dataset.x = result.x;
-            item.dataset.y = result.y;
-            dropdown.appendChild(item);
+        markerList = markerList.filter(marker => {
+            const { lat, lng } = marker.getLatLng();
+            if ((lat === startY && lng === startX) || (lat === endY && lng === endX)) {
+                return true;
+            } else {
+                map.removeLayer(marker); // Remove marker from map
+                return false;
+            }
         });
-
-        dropdown.style.display = "grid";
     };
 
     function selectFormAddress(event) {
@@ -101,19 +79,24 @@ function dynamicEventListeners() {
         const index = result.index;
 
         const closestDropdown = target.parentNode;
-        const closestInput = closestDropdown.parentNode.children[1];
+        const closestInput = closestDropdown.parentNode.children[0];
 
         if (index !== undefined) {
             // Update the input value with the selected address
             closestInput.value = event.target.textContent;
             closestInput.dataset.x = result.x;
             closestInput.dataset.y = result.y;
-
+            
             const marker = L.marker([result.y, result.x]).addTo(map);
+            console.log(closestInput.name);
+            marker.bindPopup(closestInput.name)
+            markerList.push(marker);
             
             // Remove the other search results
             closestDropdown.style.display = "none";
             closestDropdown.innerHTML = "";
+
+            checkMarkers();
         }
     };
 
@@ -140,7 +123,7 @@ function dynamicEventListeners() {
     });
 
     
-    // Hide the dropdown when clicking outside of it
+    // Hide the dropdowns when clicking the rest of the screen
     document.addEventListener("click", (event) => {
         if (!startPoint.contains(event.target) && !startDropdown.contains(event.target)) {
             startDropdown.style.display = "none";
@@ -149,21 +132,14 @@ function dynamicEventListeners() {
             endDropdown.style.display = "none";
         }
     });
-    // startAddress.addTo(startPoint);
-    
-    // addressForm.addEventListener("submit", async (event) => {
-    //     event.preventDefault();
-    //     const results = await provider.search({ query: startPoint.value });
-    //     console.log(results); // » [{}, {}, {}, ...]
-    // });
 }
 
-function clearElement(element) {
-    if (!element) return;
-    while (element.firstChild) {
-        element.removeChild(element.firstChild);
-    };
-};
+// function clearElement(element) {
+//     if (!element) return;
+//     while (element.firstChild) {
+//         element.removeChild(element.firstChild);
+//     };
+// };
 
 function renderPage(pages) {
     if (!body) return;

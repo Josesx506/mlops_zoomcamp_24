@@ -22,7 +22,7 @@ module.exports = {
         {
           test: /\.(woff|woff2|eot|truetype|opentype)$/i,
           type: "asset/resource",
-        },
+        }
       ],
     },
     plugins: [
