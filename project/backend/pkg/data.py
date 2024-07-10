@@ -1,3 +1,4 @@
+import os
 import sys
 from datetime import datetime, timedelta
 from tempfile import NamedTemporaryFile
@@ -8,14 +9,17 @@ import pandas as pd
 import pytz
 import requests
 from geopandas import GeoDataFrame, points_from_xy
+from pkg.utils import get_data_dir
 from tqdm import tqdm
 
-"""
-`python src/get_data.py 2016-01-01 2016-03-01`
-python src/get_data.py 2016-01-01 2016-01-02
-"""
 
 def load_shapefile():
+    """
+    Download the NYC Taxi Zone geojson file from the s3 bucket
+
+    Returns:
+        gpd.GeoDataFrame: Boundary data for each zone.
+    """
     S3_BUCKET = "mlflow-artifacts-joses"
     s3 = boto3.client("s3")
     temp_file = NamedTemporaryFile(suffix=".geojson")
@@ -163,14 +167,49 @@ class NYCAccidentDataPipe:
         fmt_df = self.preprocess_json(msg)
         return fmt_df
 
-def preprocess_main():
-    starttime = sys.argv[1]
-    endtime = sys.argv[2]
+def download_data(starttime=None,endtime=None,mode="train",save=False):
+    """
+    Download data for either training, validation, or testing.
+    It can be run from terminal as 
+        - `python pkg/data.py 2016-01-01 2016-03-01 train True`
+        - `python pkg/data.py 2016-01-01 2016-03-01 test False`
+    or inside a script as
+        - `download_data("2016-01-01", "2016-03-01", mode="train", save=True)`
+        - `download_data("2016-01-01", "2016-03-01", mode="test", save=False)`
+
+    Args:
+        starttime (str, optional): Start date to download data.
+        endtime (str, optional): End date to download data.
+        mode (str, optional): Check if the data is in train or val mode. Defaults to "train".
+        save (bool, optional): Save the file to the data folder. Defaults to False.
+
+    Raises:
+        ValueError: If not enough arguments are specified
+    
+    Returns:
+        pd.DataFrame: Preprocessed data
+    """
+    if (starttime is None) and (endtime is None) and (len(sys.argv) == 5):
+        starttime = sys.argv[1]
+        endtime = sys.argv[2]
+        mode = sys.argv[3]
+        save = bool(sys.argv[4])
+    elif (starttime is not None) and (endtime is not None):
+        pass
+    else:
+        raise ValueError("`starttime` and `endtime` need to be specified")
+    
+    save_dir = get_data_dir()
+
     shp = load_shapefile()
     df = load_data(starttime, endtime)
     labeled_data = generate_incident_labels(df,shp)
+
+    if os.path.exists(save_dir) and save:
+        labeled_data.to_parquet(f"{save_dir}/{mode}.parquet")
+    
     return labeled_data
 
 
 if __name__ == "__main__":
-    preprocess_main()
+    download_data()

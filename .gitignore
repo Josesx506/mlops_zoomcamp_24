@@ -17,6 +17,8 @@ zmcp
 project/frontend/node_modules
 project/backend/.venv
 project/backend/.env
+project/backend/mlartifacts
+project/backend/mlruns
 
 __pycache__
 */__pycache__

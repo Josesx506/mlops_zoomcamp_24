@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Vehicle collision predictions in NY"
 authors = ["Josesx506 <josesomojola@gmail.com>"]
 readme = "README.md"
-package-mode = false
+# package-mode = false
+packages = [{ include = "pkg" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -20,6 +21,8 @@ osmnx = "^1.9.3"
 folium = "^0.17.0"
 requests = "^2.32.3"
 tqdm = "^4.66.4"
+xgboost = "^2.1.0"
+hyperopt = "^0.2.7"
 
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
