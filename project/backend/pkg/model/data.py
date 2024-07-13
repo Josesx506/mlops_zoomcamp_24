@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from datetime import datetime, timedelta
@@ -9,7 +10,7 @@ import pandas as pd
 import pytz
 import requests
 from geopandas import GeoDataFrame, points_from_xy
-from pkg.utils import get_data_dir
+from pkg.model.utils import get_data_dir
 from tqdm import tqdm
 
 
@@ -69,16 +70,16 @@ def visualize_single_borough_stats(df:pd.DataFrame, borough_id:str):
     tmp = tmp[["dowk","hour","incidents"]].reset_index(drop=True)
     fata_pvt = tmp.pivot_table(index="dowk", columns="hour", aggfunc="sum", fill_value=0)
     
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
 
-    plt.figure(figsize=(12, 6))
-    sns.heatmap(fata_pvt, annot=True, fmt="d", cmap="YlGnBu", cbar=True)
-    plt.title('Density of Points for Each Day of the Week and Hour of the Day')
-    plt.xlabel('Hour of the Day')
-    plt.ylabel('Day of the Week')
-    plt.yticks(ticks=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5], labels=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], rotation=0)
-    plt.show()
+    # plt.figure(figsize=(12, 6))
+    # sns.heatmap(fata_pvt, annot=True, fmt="d", cmap="YlGnBu", cbar=True)
+    # plt.title('Density of Points for Each Day of the Week and Hour of the Day')
+    # plt.xlabel('Hour of the Day')
+    # plt.ylabel('Day of the Week')
+    # plt.yticks(ticks=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5], labels=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], rotation=0)
+    # plt.show()
 
 
 
@@ -86,6 +87,12 @@ def load_data(starttime,endtime):
     starttime = datetime.strptime(starttime, "%Y-%m-%d")
     endtime = datetime.strptime(endtime, "%Y-%m-%d")
 
+    # Save the most recent date that the api accessed data for retraining
+    data_dir = get_data_dir()
+    last_accessed = {"last_access": str(endtime)}
+    with open(f"{data_dir}/last_accessed.json", "w") as fout:
+        json.dump(last_accessed, fout)
+    
     days_btw = (endtime - starttime).days
     incr = 1
     daily_dfs = []
@@ -171,11 +178,11 @@ def download_data(starttime=None,endtime=None,mode="train",save=False):
     """
     Download data for either training, validation, or testing.
     It can be run from terminal as 
-        - `python pkg/data.py 2016-01-01 2016-03-01 train True`
-        - `python pkg/data.py 2016-01-01 2016-03-01 test False`
+        - `python pkg/model/data.py 2023-01-01 2023-03-01 train True`
+        - `python pkg/model/data.py 2023-01-01 2023-03-01 test False`
     or inside a script as
-        - `download_data("2016-01-01", "2016-03-01", mode="train", save=True)`
-        - `download_data("2016-01-01", "2016-03-01", mode="test", save=False)`
+        - `download_data("2023-01-01", "2023-03-01", mode="train", save=True)`
+        - `download_data("2023-01-01", "2023-03-01", mode="test", save=False)`
 
     Args:
         starttime (str, optional): Start date to download data.

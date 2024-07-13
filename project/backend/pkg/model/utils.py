@@ -1,16 +1,17 @@
+import os
+from datetime import datetime
 from pathlib import Path
 from shutil import rmtree
-import os
 
 
 def get_data_dir():
     file_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-    data_dir = f"{file_dir.parents[1]}/data"
+    data_dir = f"{file_dir.parents[2]}/data"
     return data_dir
 
 def remove_local_artifacts():
     file_dir = Path(os.path.dirname(os.path.realpath(__file__)))
-    proj_dir = file_dir.parents[0]
+    proj_dir = file_dir.parents[1]
 
     unwanted_fols = ["mlartifacts","mlruns"]
 
@@ -23,3 +24,8 @@ def remove_local_artifacts():
             rmtree(root)
     
     return None
+
+def format_time():
+    timenw = str(datetime.now()).split(".")[0]
+    fmt = datetime.strptime(timenw, "%Y-%m-%d %H:%M:%S")
+    return fmt
