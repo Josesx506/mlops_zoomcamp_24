@@ -1,22 +1,26 @@
+import os
 import warnings
 from pprint import pprint
 
 import mlflow
 import pandas as pd
-from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
+from hyperopt import STATUS_OK, Trials, fmin, tpe
 from mlflow.entities import ViewType
 from mlflow.tracking import MlflowClient
 from pkg.model.data import download_data
 from pkg.model.models import load_all_models, model_hyperparameters
 from pkg.model.utils import format_time, get_data_dir, remove_local_artifacts
+from sklearn.compose import ColumnTransformer
 from sklearn.metrics import mean_squared_error, root_mean_squared_error
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 warnings.filterwarnings("ignore", message=".*Hint: Inferred schema contains integer column(s).*", category=UserWarning)
 warnings.filterwarnings("ignore", message=".*mlflow.utils.autologging_utils: You are using an unsupported version of.*", category=UserWarning)
 
-
-MLFLOW_TRACKING_URI = "http://127.0.0.1:5000"
-EXPERIMENT_NAME = "nyc-motor-collisions"
+# Check if a remote model registry exists, else use a local registry
+MLFLOW_TRACKING_URI = os.getenv("MODEL_REGISTRY_URI", "http://127.0.0.1:5000")
+EXPERIMENT_NAME = os.getenv("EXPERIMENT_NAME", "nyc-motor-collisions")
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 mlflow.set_experiment(EXPERIMENT_NAME)
@@ -40,6 +44,15 @@ def create_data(start:str,end:str,mode="train",target="incidents"):
     y = df[target]#.to_numpy()
     
     return X,y
+
+
+def make_pipeline(model,numeric_features=["location_id", "dowk", "hour"]):
+    numeric_transformer = Pipeline(steps=[("scaler", StandardScaler())])
+
+    preprocessor = ColumnTransformer(transformers=[("numerical", numeric_transformer, numeric_features),])
+    pipeline = Pipeline(steps=[("preprocessor", preprocessor),
+                               ("model", model)])
+    return pipeline
 
 
 def train_base_models(train_dt:dict={"start":"2023-01-01",
@@ -76,9 +89,10 @@ def train_base_models(train_dt:dict={"start":"2023-01-01",
             mlflow.log_param("train-data-path", f"{data_dir}/train.parquet")
             mlflow.log_param("valid-data-path", f"{data_dir}/test.parquet")
 
+            pipeln = make_pipeline(model_cls)
 
-            model_cls.fit(Xtrain,ytrain)
-            ypred = model_cls.predict(Xtest)
+            pipeln.fit(Xtrain,ytrain)
+            ypred = pipeln.predict(Xtest)
 
             rmse = root_mean_squared_error(ytest, ypred)
             mse = mean_squared_error(ytest, ypred)
@@ -133,7 +147,8 @@ def get_best_n_registry_models(n=3):
     
     return top_n_models
 
-def register_best_model(model_name = "nyc-vhc-col-regressor"):
+def register_best_model(model_name = os.getenv("PRD_MODEL_NAME",
+                                               "nyc-vhc-col-regressor")):
     best_model = get_best_n_registry_models(1)[0]
 
     all_reg_models = client.search_registered_models()
@@ -181,10 +196,6 @@ def training_pipeline(train_dt:dict={"start":"2023-01-01",
     Returns:
         None 
     """
-    # train_dt={"start":"2023-01-01",
-    #           "end":"2023-03-01"},
-    # test_dt={"start":"2023-03-01",
-    #          "end":"2023-03-31"}
     print(f"{format_time()}: Training Base Model  ........")
     df_base_metrics, inp_data = train_base_models(train_dt,test_dt)
     
@@ -213,10 +224,13 @@ def training_pipeline(train_dt:dict={"start":"2023-01-01",
             with mlflow.start_run():
                 mlflow.set_tag("model_class", model_dict["model_class"])
                 mlflow.log_params(params)
-                model = target_model(**params)
-                model.fit(Xtrain,ytrain)
 
-                ypred = model.predict(Xtest)
+                model = target_model(**params)
+                pipeln = make_pipeline(model)
+
+                pipeln.fit(Xtrain,ytrain)
+
+                ypred = pipeln.predict(Xtest)
 
                 rmse = root_mean_squared_error(ytest, ypred)
                 mse = mean_squared_error(ytest, ypred)
@@ -238,13 +252,10 @@ def training_pipeline(train_dt:dict={"start":"2023-01-01",
     return None
 
 
-"""
-python pkg/train.py
-"""
+
 
 if __name__ == "__main__":
     train_dt= {"start":"2023-01-01", "end":"2023-03-01"}
     test_dt= {"start":"2023-03-01","end":"2023-03-31"}
     training_pipeline(train_dt, test_dt)
-
     # remove_local_artifacts()

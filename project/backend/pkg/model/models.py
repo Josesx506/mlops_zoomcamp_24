@@ -10,9 +10,8 @@ from hyperopt.pyll import scope
 def load_sklearn_models():
     model_list = [ExtraTreesRegressor, 
                   GradientBoostingRegressor,
-                  RandomForestRegressor,
-                  Lasso,LinearRegression,
-                  LinearSVR]
+                  RandomForestRegressor]
+    # ,Lasso,LinearRegression,LinearSVR
 
     # ensemble_models = [
     #         "ensemble.ExtraTreesRegressor",
@@ -49,7 +48,6 @@ def model_hyperparameters(model_name,
                           learning_rate=hp.loguniform("learning_rate", -3, 0),
                           max_depth=scope.int(hp.quniform("max_depth", 4, 100, 1)),      # Maximum depth of a tree.
                           min_child_weight=hp.loguniform("min_child_weight", -1, 3),  
-                          num_boost_round=hp.quniform("num_boost_round", 500, 1000, 10), # Number of gradient boosted trees. Equivalent to number of boosting rounds.
                           objective="reg:squarederror",
                           random_state=random_state,                                     # Preferred over seed.
                           reg_alpha=hp.loguniform("reg_alpha", -5, -1),                  # L1 regularization term on weights (xgb’s alpha).
