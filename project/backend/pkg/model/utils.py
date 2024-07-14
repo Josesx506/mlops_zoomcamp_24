@@ -7,6 +7,8 @@ from shutil import rmtree
 def get_data_dir():
     file_dir = Path(os.path.dirname(os.path.realpath(__file__)))
     data_dir = f"{file_dir.parents[2]}/data"
+    if not os.path.exists(data_dir):
+        os.makedirs(data_dir)
     return data_dir
 
 def remove_local_artifacts():

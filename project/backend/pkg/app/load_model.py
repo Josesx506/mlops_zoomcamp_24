@@ -6,7 +6,7 @@ from mlflow.tracking import MlflowClient
 
 def load_trained_model(mode="mlflow-registry"):
     # Check if a remote model registry exists, else use a local registry
-    MLFLOW_TRACKING_URI = os.getenv("MODEL_REGISTRY_URI", "http://127.0.0.1:5150")
+    MLFLOW_TRACKING_URI = os.getenv("MODEL_REGISTRY_URI")
     EXPERIMENT_NAME = os.getenv("EXPERIMENT_NAME", "nyc-motor-collisions")
 
     mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)

@@ -1,4 +1,5 @@
 import logging
+import os
 import random
 import time
 from datetime import date, datetime, timedelta
@@ -9,12 +10,14 @@ from evidently import ColumnMapping
 from evidently.metrics import (ColumnDriftMetric, DatasetDriftMetric,
                                DatasetMissingValuesMetric)
 from evidently.report import Report
-from prefect import flow, task
-from sklearn.metrics import root_mean_squared_error
 from pkg.app.load_model import load_trained_model
 from pkg.model.data import download_data
+from prefect import flow, task
+from sklearn.metrics import root_mean_squared_error
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s]: %(message)s")
+dbhost = os.getenv("DB_HOST", "localhost")
+dbport = os.getenv("DB_PORT", "5436")
 
 SEND_TIMEOUT = 10
 rand = random.Random()
@@ -47,11 +50,11 @@ report = Report(metrics = [
 
 @task
 def prep_db():
-	with psycopg.connect("host=localhost port=5436 user=postgres password=zmcp24", autocommit=True) as conn:
+	with psycopg.connect(f"host={dbhost} port={dbport} user=postgres password=zmcp24", autocommit=True) as conn:
 		res = conn.execute("SELECT 1 FROM pg_database WHERE datname='test'")
 		if len(res.fetchall()) == 0:
 			conn.execute("create database test;")
-		with psycopg.connect("host=localhost port=5436 dbname=test user=postgres password=zmcp24") as conn:
+		with psycopg.connect(f"host={dbhost} port={dbport} dbname=test user=postgres password=zmcp24") as conn:
 			conn.execute(create_table_statement)
 
 @task
@@ -94,7 +97,7 @@ def calculate_metrics_postgresql(curr, refr_start, cur_start, i):
 def batch_monitoring_backfill():
     prep_db()
     last_send = datetime.now() - timedelta(seconds=10)
-    with psycopg.connect("host=localhost port=5436 dbname=test user=postgres password=zmcp24", autocommit=True) as conn:
+    with psycopg.connect(f"host={dbhost} port={dbport} dbname=test user=postgres password=zmcp24", autocommit=True) as conn:
         for i in range(1, 22):
             with conn.cursor() as curr:
                 calculate_metrics_postgresql(curr, refr_start, cur_start, i)

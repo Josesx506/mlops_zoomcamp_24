@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", message=".*Hint: Inferred schema contains inte
 warnings.filterwarnings("ignore", message=".*mlflow.utils.autologging_utils: You are using an unsupported version of.*", category=UserWarning)
 
 # Check if a remote model registry exists, else use a local registry
-MLFLOW_TRACKING_URI = os.getenv("MODEL_REGISTRY_URI", "http://127.0.0.1:5150")
+MLFLOW_TRACKING_URI = os.getenv("MODEL_REGISTRY_URI")
 EXPERIMENT_NAME = os.getenv("EXPERIMENT_NAME", "nyc-motor-collisions")
 
 mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)

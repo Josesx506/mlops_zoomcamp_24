@@ -40,8 +40,27 @@ Predict number of motor vehicle incidents based on `location_id | dayOfWeek | ho
 check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
 
 
+docker build --no-cache --build-arg AWS_ACCESS_KEY_ID=$AWS_KEY --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_KEY --build-arg AWS_DEFAULT_REGION=$AWS_REGION -t mlserver:v1 -f docker-files/Dockerfile.mlserver .
+
+docker run --rm -p 8534:8534 mlserver:v1 &
+
+<!-- poetry export --without-hashes --format=requirements.txt > requirements.txt -->
+docker build -t mlserver:v1 --file Dockerfile.mlserver 
+
+
+poetry export --without-hashes --format=requirements.txt > requirements.txt
+
+
+
+
 curl -X POST -H "Content-Type: application/json" -d '{
         "location_id": "200",
         "dowk": "4",
         "hour": "12" 
+    }' http://0.0.0.0:8534/predict_collisions
+
+curl -X POST -H "Content-Type: application/json" -d '{
+        "location_id": "100",
+        "dowk": "4",
+        "hour": "16" 
     }' http://0.0.0.0:8534/predict_collisions

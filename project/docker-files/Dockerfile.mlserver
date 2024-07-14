@@ -1,0 +1,28 @@
+# Use a base Python image
+FROM python:3.11-slim-buster
+
+RUN apt-get update \
+    && apt-get -y install libpq-dev gcc \
+    && pip install psycopg2 psycopg
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Python scripts into the container
+COPY ../backend/pkg /app/pkg
+COPY ../backend/config /app/config
+COPY ../backend/dashboards /app/dashboards
+
+# Copy requirements file and install dependencies
+COPY ../backend/requirements.txt /app/
+RUN pip install -r requirements.txt
+
+# Copy the entrypoint script
+COPY ../backend/start_server.sh /app/start_server.sh
+RUN chmod +x /app/start_server.sh
+
+# Expose the port for the Gunicorn server
+EXPOSE 8534
+
+# Set the entrypoint
+ENTRYPOINT ["/app/start_server.sh"]
