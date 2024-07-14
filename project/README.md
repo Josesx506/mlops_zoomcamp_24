@@ -31,3 +31,17 @@ Predict number of motor vehicle incidents based on `location_id | dayOfWeek | ho
 - Connect to the server using the instances public IP address. It should look something like `http://ec2-100-26-136-60.compute-1.amazonaws.com:5000`.
     > Note: `http://` should be used instead of `https://`. No **s** unless it won't connect.
 - Now we're ready to start training the model.
+
+
+
+
+`docker-compose up -d`
+
+check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
+
+
+curl -X POST -H "Content-Type: application/json" -d '{
+        "location_id": "200",
+        "dowk": "4",
+        "hour": "12" 
+    }' http://0.0.0.0:8534/predict_collisions

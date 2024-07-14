@@ -1,0 +1,71 @@
+version: '3.7'
+
+volumes: 
+  grafana_data: {}
+
+networks:
+  frontend-server:
+  backend-server:
+
+x-environment: &default-environment
+  MLFLOW_TRACKING_URI: ${MODEL_REGISTRY_URI}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_KEY}
+  AWS_DEFAULT_REGION: ${AWS_Zone}
+  S3_URI: ${S3_URI}
+
+services:
+  mlflow:
+    build:
+      context: .
+      dockerfile: ./docker-files/Dockerfile.mlflow
+    ports:
+      - "5150:5150"
+    networks:
+      - backend-server
+    environment:
+        <<: *default-environment
+    command: mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=sqlite:///mlflow.db --default-artifact-root=${S3_URI}
+    restart: always
+  
+  # mlserver:
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker-files/Dockerfile.mlserver
+  #   depends_on:
+  #     mlflow:
+  #       condition: service_healthy
+
+  
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: zmcp24
+    ports:
+      - "5436:5432"
+    networks:
+      - backend-server
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - backend-server
+      - frontend-server  
+
+  grafana:
+    image: grafana/grafana
+    user: "472"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+      - ./backend/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+      - ./backend/dashboards:/opt/grafana/dashboards
+    networks:
+      - backend-server
+      - frontend-server
+    restart: always
