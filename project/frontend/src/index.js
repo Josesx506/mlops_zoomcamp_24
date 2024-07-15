@@ -9,7 +9,13 @@ import "leaflet/dist/leaflet.css";
 import "./css/main.css";
 import { createJourneyForm } from "./utils/form";
 import { populateDropdown } from "./utils/helpers";
+import { highlightStyle, regularStyle, showNameLocationid } from "./utils/maps";
 import "./plugins/leaflet-mask"
+import geoJsonPath from "../../data/NYCTaxiZones.geojson";
+
+// Check if the host env variable exists else default to local host
+const serverHost = process.env.APP_SERVER_HOST || "http://127.0.0.1:8534";
+
 
 // Configure default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -32,7 +38,8 @@ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 // Load shapefile data. Use it to clip and shade the map
-const geoJsonPath = "../../data/NYCTaxiZones.geojson";
+// const geoJsonPath = "../../data/NYCTaxiZones.geojson";
+// console.log(geoJsonPath)
 L.mask(geoJsonPath, {
     interactive: true, 
     fitBounds: true,
@@ -44,21 +51,13 @@ L.mask(geoJsonPath, {
 }).addTo(map);
 
 const nycTaxiZoneLayer = new L.GeoJSON.AJAX(geoJsonPath, {
-    style: function (feature) {
-        return {
-            color: "black",
-            fillColor: "yellow",
-            weight: 0.5,
-            opacity: 0.9,
-            fillOpacity: 0.05,
-        };
-    },
-    onEachFeature: function (feature, layer) {
-        layer.bindPopup(`Name: ${feature.properties.zone} ID: ${feature.properties.location_id}`);
-    }
-});  
+    style: regularStyle,
+    onEachFeature: showNameLocationid
+});
+
 nycTaxiZoneLayer.addTo(map);
 let markerList = []; // List of active markers
+let routesList = []; // List of plotted routes
 
 function dynamicEventListeners() {
     const addressForm = document.querySelector("#new-address-entry-cntr");
@@ -100,7 +99,6 @@ function dynamicEventListeners() {
             closestInput.dataset.y = result.y;
             
             const marker = L.marker([result.y, result.x]).addTo(map);
-            console.log(closestInput.name);
             marker.bindPopup(closestInput.name)
             markerList.push(marker);
             
@@ -144,14 +142,66 @@ function dynamicEventListeners() {
             endDropdown.style.display = "none";
         }
     });
-}
 
-// function clearElement(element) {
-//     if (!element) return;
-//     while (element.firstChild) {
-//         element.removeChild(element.firstChild);
-//     };
-// };
+    async function predictCollisions(mkrCoords) {
+        try {
+            let response = await fetch(`${serverHost}/predict_collisions`, {
+                method: "POST",
+                body: JSON.stringify({
+                    "coords": mkrCoords,
+                }),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            } else {
+                let jsonResponse = await response.json();
+                let routeGeoJSON = jsonResponse.route;
+                let predIncidents = jsonResponse.incidents;
+                let anmlyBoroughs = jsonResponse.boroughs;
+
+                console.log(predIncidents,anmlyBoroughs)
+
+                routesList.forEach(route => map.removeLayer(route));
+
+                // Plot the route on the map
+                let routeLayer = L.geoJSON(routeGeoJSON).addTo(map);
+                routesList.push(routeLayer);
+
+                nycTaxiZoneLayer.eachLayer(function (layer) {
+                    if (anmlyBoroughs.includes(layer.feature.properties.zone)) {
+                        layer.setStyle(highlightStyle(layer.feature));
+                    } else {
+                        layer.setStyle(regularStyle(layer.feature));
+                    }
+                });
+
+                addressForm.reset();
+            }
+            
+        } catch (error) {
+            console.error("There was a problem with the fetch operation:", error);
+        }};
+
+    addressForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        let formInputs = document.querySelectorAll(".address-form-input");
+        let locationMarkers = {}
+        formInputs.forEach( function(el) {
+            locationMarkers[el.id] = {"lng":el.dataset.x,"lat":el.dataset.y};
+        });
+
+        nycTaxiZoneLayer.eachLayer(function (layer) {
+            layer.setStyle(regularStyle(layer.feature));
+        });
+
+        predictCollisions(locationMarkers);
+    });
+}
 
 function renderPage(pages) {
     if (!body) return;

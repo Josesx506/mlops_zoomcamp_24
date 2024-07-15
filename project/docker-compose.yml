@@ -7,6 +7,7 @@ networks:
 
 x-environment: &default-environment
   MLFLOW_TRACKING_URI: "http://mlflow:5150"
+  APP_SERVER_HOST: "http://mlserver:8534"
   DB_HOST: "db"
   DB_PORT: "5432"
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY}
@@ -42,6 +43,19 @@ services:
     depends_on:
       - mlflow
   
+  webpack:
+    build:
+      context: .
+      dockerfile: ./docker-files/Dockerfile.webpack
+    ports:
+      - "9300:9300"  # Expose the frontend leaflet server
+    networks:
+      - frontend-server
+    environment:
+      <<: *default-environment
+    depends_on:
+      - mlserver
+    
   db:
     image: postgres
     restart: always

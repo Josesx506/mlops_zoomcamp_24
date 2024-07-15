@@ -98,10 +98,12 @@ def batch_monitoring_backfill():
     prep_db()
     last_send = datetime.now() - timedelta(seconds=10)
     with psycopg.connect(f"host={dbhost} port={dbport} dbname=test user=postgres password=zmcp24", autocommit=True) as conn:
-        for i in range(1, 22):
-            with conn.cursor() as curr:
-                calculate_metrics_postgresql(curr, refr_start, cur_start, i)
-            
+        for i in range(1, 30):
+            try:
+                with conn.cursor() as curr:
+                    calculate_metrics_postgresql(curr, refr_start, cur_start, i)
+            except:
+                 pass
             new_send = datetime.now()
             seconds_elapsed = (new_send - last_send).total_seconds()
             if seconds_elapsed < SEND_TIMEOUT:

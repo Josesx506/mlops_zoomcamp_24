@@ -5,6 +5,8 @@ RUN apt-get update \
     && apt-get -y install libpq-dev gcc \
     && pip install psycopg2 psycopg
 
+COPY ../data/nyc-taxi-osm.graphml.gz /data/
+
 # Set the working directory
 WORKDIR /app
 

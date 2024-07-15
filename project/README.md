@@ -40,6 +40,26 @@ Predict number of motor vehicle incidents based on `location_id | dayOfWeek | ho
 check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
 
 
+### Setting up the environment
+Run `docker-compose up -d` in detach mode from the `repo/project` directory. This will spin the services below. Forwarded ports are indicated below
+- [x] Ml server                  - http://localhost:8534/
+- [x] Mlflow (for Mlserver)      - http://localhost:5150/
+- [x] Grafana dashboard          - http://localhost:3000/
+- [x] Postgres db (for Grafana)  - http://localhost:5436/
+- [x] Adminer (for sql servers)  - http://localhost:8080/
+
+For the 5 services, only ***Adminer,Mlflow, and Grafana*** have a visible UI when you click the link. 
+
+
+npm run serve
+
+poetry export --without-hashes --format=requirements.txt > requirements.txt
+
+docker build --no-cache --build-arg -t wbserver:v1 -f docker-files/Dockerfile.webpack .
+
+docker run --rm -p 9300:9300 wbserver:v1
+
+
 docker build --no-cache --build-arg AWS_ACCESS_KEY_ID=$AWS_KEY --build-arg AWS_SECRET_ACCESS_KEY=$AWS_SECRET_KEY --build-arg AWS_DEFAULT_REGION=$AWS_REGION -t mlserver:v1 -f docker-files/Dockerfile.mlserver .
 
 docker run --rm -p 8534:8534 mlserver:v1 &
@@ -51,7 +71,18 @@ docker build -t mlserver:v1 --file Dockerfile.mlserver
 poetry export --without-hashes --format=requirements.txt > requirements.txt
 
 
-
+curl -X POST -H "Content-Type: application/json" -d '{
+  "coords": {
+    "start-address": {
+      "lng": "-73.7793733748521",
+      "lat": "40.642947899999996"
+    },
+    "end-address": {
+      "lng": "-74.0098809",
+      "lat": "40.706619"
+    }
+  }
+}' http://0.0.0.0:8534/predict_collisions
 
 curl -X POST -H "Content-Type: application/json" -d '{
         "location_id": "200",

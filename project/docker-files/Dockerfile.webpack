@@ -1,0 +1,25 @@
+# Dockerfile for frontend server
+FROM node:20-bookworm-slim
+
+# Copy the geojson file
+COPY ../data/NYCTaxiZones.geojson /data/
+
+# Set the working directory
+WORKDIR /app
+
+# Set Docker Env manually
+# ENV APP_SERVER_HOST="http://127.0.0.1:8500"
+
+# Copy package.json and other files
+COPY ../frontend/package*.json /app/
+COPY ../frontend/webpack.config.js /app/
+COPY ../frontend/src /app/src
+
+# Install dependencies
+RUN npm install
+
+# Expose the port
+EXPOSE 9300
+
+# Start the application
+CMD ["npm", "run" ,"serve"]

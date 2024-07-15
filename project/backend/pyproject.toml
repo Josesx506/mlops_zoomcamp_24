@@ -28,6 +28,8 @@ evidently = "^0.4.31"
 psycopg = "^3.2.1"
 setuptools = "^70.3.0"
 
+flask-cors = "^4.0.1"
+networkx = "^3.3"
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
 black = "^24.4.2"

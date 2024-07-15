@@ -515,13 +515,13 @@
   },
   "time": {
     "from": "2023-04-01T23:00:00.000Z",
-    "to": "2023-04-26T00:00:00.000Z"
+    "to": "2023-05-01T00:00:00.000Z"
   },
   "timeRangeUpdatedDuringEditOrView": false,
   "timepicker": {},
   "timezone": "browser",
   "title": "MLOps Vehicle Collision Monitoring Dashboard",
   "uid": "bdpio546069z4b",
-  "version": 2,
+  "version": 1,
   "weekStart": ""
 }
