@@ -47,7 +47,7 @@ def create_nyc_graphml(mode="drive",cent_coords=(40.723782,-73.98031),
     save_graphml(graph, filename, gephi=False)
     return None
 
-@timed_lru_cache(1e6)
+@timed_lru_cache(7200)
 def load_nyc_graphml():
     """
     Load the saved graphml file. If it's not available, download it

@@ -1,0 +1,36 @@
+# Use a base Python image
+FROM python:3.11-slim-buster
+
+RUN apt-get update \
+    && apt-get -y install libpq-dev gcc \
+    && pip install psycopg2 psycopg
+
+COPY ../data/nyc-taxi-osm.graphml.gz /data/
+COPY ../data/NYCTaxiZones.geojson /data/
+COPY ../data/saved_artifact /data/saved_artifact
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the Python scripts into the container
+COPY ../backend/pkg/app/static_server.py /app/pkg/app/
+COPY ../backend/pkg/app/app_utils.py /app/pkg/app/
+COPY ../backend/pkg/app/utils.py /app/pkg/app/
+COPY ../backend/pkg/app/__init__.py /app/pkg/app/
+COPY ../backend/pkg/model/data.py /app/pkg/model/
+COPY ../backend/pkg/model/utils.py /app/pkg/model/
+COPY ../backend/pkg/model/__init__.py /app/pkg/model/
+COPY ../backend/pkg/__init__.py /app/pkg
+
+# Copy requirements file and install dependencies
+COPY ../backend/mini-requirements.txt /app/
+RUN pip install -r mini-requirements.txt
+
+# Expose the port for the Gunicorn server
+EXPOSE 8536
+
+# Add the app folder to python path so the pkg scripts can be imported
+RUN export PYTHONPATH=$PYTHONPATH:/app
+
+# Set the entrypoint
+ENTRYPOINT [ "gunicorn", "--bind=0.0.0.0:8536", "pkg.app.static_server:app" ]

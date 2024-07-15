@@ -7,15 +7,37 @@ networks:
 
 x-environment: &default-environment
   MLFLOW_TRACKING_URI: "http://mlflow:5150"
-  APP_SERVER_HOST: "http://localhost:8534"
+  APP_SERVER_HOST: "http://localhost:8536"
   DB_HOST: "db"
   DB_PORT: "5432"
+  DB_PWD: "zmcp24"
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_KEY}
   AWS_DEFAULT_REGION: ${AWS_Zone}
   S3_URI: ${S3_URI}
 
 services:
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - backend-server
+      - frontend-server  
+    
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: zmcp24
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./docker-files/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - backend-server
+
   mlflow:
     build:
       context: .
@@ -26,8 +48,10 @@ services:
       - backend-server
     environment:
         <<: *default-environment
-    command: mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=sqlite:///mlflow.db --default-artifact-root=${S3_URI}
+    command: mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=postgresql://postgres:zmcp24@db:5432/mlflowdb --default-artifact-root=${S3_URI}
     restart: always
+    depends_on:
+      - db
   
   mlserver:
     build:
@@ -42,38 +66,6 @@ services:
       <<: *default-environment
     depends_on:
       - mlflow
-  
-  webpack:
-    build:
-      context: .
-      dockerfile: ./docker-files/Dockerfile.webpack
-    ports:
-      - "9300:9300"  # Expose the frontend leaflet server
-    networks:
-      - backend-server
-    environment:
-      <<: *default-environment
-    depends_on:
-      - mlserver
-    
-  db:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: zmcp24
-    ports:
-      - "5436:5432"
-    networks:
-      - backend-server
-
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - "8080:8080"
-    networks:
-      - backend-server
-      - frontend-server  
 
   grafana:
     image: grafana/grafana
@@ -88,3 +80,28 @@ services:
       - backend-server
       - frontend-server
     restart: always
+  
+  appserver:
+    build:
+      context: .
+      dockerfile: ./docker-files/Dockerfile.appserver
+    ports:
+      - "8536:8536"  # Expose the Gunicorn server port
+    networks:
+      - frontend-server
+      - backend-server
+    environment:
+      <<: *default-environment
+  
+  webpack:
+    build:
+      context: .
+      dockerfile: ./docker-files/Dockerfile.webpack
+    ports:
+      - "9300:9300"  # Expose the frontend leaflet server
+    networks:
+      - backend-server
+    environment:
+      <<: *default-environment
+    depends_on:
+      - appserver

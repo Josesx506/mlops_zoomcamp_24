@@ -1,5 +1,4 @@
 #!/bin/bash
-
 export PYTHONPATH=$PYTHONPATH:/app
 
 # Run the training script

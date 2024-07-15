@@ -107,6 +107,7 @@ function dynamicEventListeners() {
             closestDropdown.innerHTML = "";
 
             checkMarkers();
+            routesList.forEach(route => map.removeLayer(route));
         }
     };
 
@@ -149,6 +150,7 @@ function dynamicEventListeners() {
                 method: "POST",
                 body: JSON.stringify({
                     "coords": mkrCoords,
+                    "cutoff": 3,
                 }),
                 headers: {
                     "Content-Type": "application/json"

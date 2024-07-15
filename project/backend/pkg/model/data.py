@@ -21,12 +21,17 @@ def load_shapefile():
     Returns:
         gpd.GeoDataFrame: Boundary data for each zone.
     """
-    S3_BUCKET = "mlflow-artifacts-joses"
-    s3 = boto3.client("s3")
-    temp_file = NamedTemporaryFile(suffix=".geojson")
-    s3.download_file(S3_BUCKET,"data/NYCTaxiZones.geojson",temp_file.name)
-    gdf = gpd.read_file(temp_file.name)
-    temp_file.close()
+    ddir = get_data_dir()
+    shp_file = f"{ddir}/NYCTaxiZones.geojson"
+    if not os.path.isfile(shp_file):
+        S3_BUCKET = "mlflow-artifacts-joses"
+        s3 = boto3.client("s3")
+        temp_file = NamedTemporaryFile(suffix=".geojson")
+        s3.download_file(S3_BUCKET,"data/NYCTaxiZones.geojson",temp_file.name)
+        gdf = gpd.read_file(temp_file.name)
+        temp_file.close()
+    else:
+        gdf = gpd.read_file(shp_file)
     return gdf
 
 def generate_incident_labels(df,shp):
