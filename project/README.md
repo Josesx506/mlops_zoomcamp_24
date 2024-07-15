@@ -70,6 +70,9 @@ docker build -t mlserver:v1 --file Dockerfile.mlserver
 
 poetry export --without-hashes --format=requirements.txt > requirements.txt
 
+### Hotfix and restart a single docker-compose service without stopping all the other containers
+docker-compose up -d --no-deps --build <service_name>
+
 
 curl -X POST -H "Content-Type: application/json" -d '{
   "coords": {
