@@ -1,0 +1,26 @@
+artifact_path: model
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.11.4
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.5.1
+mlflow_version: 2.14.2
+model_size_bytes: 195275
+model_uuid: aa33f1acd569492e9d7fcdff02ff3b50
+run_id: cc4860a0bf9b42b09ea2277bc3c4d84c
+signature:
+  inputs: '[{"type": "long", "name": "location_id", "required": true}, {"type": "long",
+    "name": "dowk", "required": true}, {"type": "long", "name": "hour", "required":
+    true}]'
+  outputs: '[{"type": "tensor", "tensor-spec": {"dtype": "float64", "shape": [-1]}}]'
+  params: null
+utc_time_created: '2024-07-15 07:49:28.283296'
