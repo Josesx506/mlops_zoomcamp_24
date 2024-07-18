@@ -14,7 +14,7 @@ from pkg.model.utils import get_data_dir
 from tqdm import tqdm
 
 
-def load_shapefile():
+def load_shapefile(s3 = boto3.client("s3")):
     """
     Download the NYC Taxi Zone geojson file from the s3 bucket
 
@@ -24,8 +24,7 @@ def load_shapefile():
     ddir = get_data_dir()
     shp_file = f"{ddir}/NYCTaxiZones.geojson"
     if not os.path.isfile(shp_file):
-        S3_BUCKET = "mlflow-artifacts-joses"
-        s3 = boto3.client("s3")
+        S3_BUCKET = os.getenv("S3_BUCKET_NAME", "mlflow-artifacts-joses")
         temp_file = NamedTemporaryFile(suffix=".geojson")
         s3.download_file(S3_BUCKET,"data/NYCTaxiZones.geojson",temp_file.name)
         gdf = gpd.read_file(temp_file.name)

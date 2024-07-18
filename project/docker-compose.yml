@@ -17,69 +17,69 @@ x-environment: &default-environment
   S3_URI: ${S3_URI}
 
 services:
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - "8080:8080"
-    networks:
-      - backend-server
-      - frontend-server  
+  # adminer:
+  #   image: adminer
+  #   restart: always
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - backend-server
+  #     - frontend-server  
     
-  db:
-    image: postgres
-    restart: always
-    environment:
-      POSTGRES_PASSWORD: zmcp24
-    ports:
-      - "5436:5432"
-    volumes:
-      - ./docker-files/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - backend-server
+  # db:
+  #   image: postgres
+  #   restart: always
+  #   environment:
+  #     POSTGRES_PASSWORD: zmcp24
+  #   ports:
+  #     - "5436:5432"
+  #   volumes:
+  #     - ./docker-files/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #   networks:
+  #     - backend-server
 
-  mlflow:
-    build:
-      context: .
-      dockerfile: ./docker-files/Dockerfile.mlflow
-    ports:
-      - "5150:5150"
-    networks:
-      - backend-server
-    environment:
-        <<: *default-environment
-    command: mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=postgresql://postgres:zmcp24@db:5432/mlflowdb --default-artifact-root=${S3_URI}
-    restart: always
-    depends_on:
-      - db
+  # mlflow:
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker-files/Dockerfile.mlflow
+  #   ports:
+  #     - "5150:5150"
+  #   networks:
+  #     - backend-server
+  #   environment:
+  #       <<: *default-environment
+  #   command: mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=postgresql://postgres:zmcp24@db:5432/mlflowdb --default-artifact-root=${S3_URI}
+  #   restart: always
+  #   depends_on:
+  #     - db
   
-  mlserver:
-    build:
-      context: .
-      dockerfile: ./docker-files/Dockerfile.mlserver
-    ports:
-      - "8534:8534"  # Expose the Gunicorn server port
-    networks:
-      - frontend-server
-      - backend-server
-    environment:
-      <<: *default-environment
-    depends_on:
-      - mlflow
+  # mlserver:
+  #   build:
+  #     context: .
+  #     dockerfile: ./docker-files/Dockerfile.mlserver
+  #   ports:
+  #     - "8534:8534"  # Expose the Gunicorn server port
+  #   networks:
+  #     - frontend-server
+  #     - backend-server
+  #   environment:
+  #     <<: *default-environment
+  #   depends_on:
+  #     - mlflow
 
-  grafana:
-    image: grafana/grafana
-    user: "472"
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./backend/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
-      - ./backend/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
-      - ./backend/dashboards:/opt/grafana/dashboards
-    networks:
-      - backend-server
-      - frontend-server
-    restart: always
+  # grafana:
+  #   image: grafana/grafana
+  #   user: "472"
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./backend/config/grafana_datasources.yaml:/etc/grafana/provisioning/datasources/datasource.yaml:ro
+  #     - ./backend/config/grafana_dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+  #     - ./backend/dashboards:/opt/grafana/dashboards
+  #   networks:
+  #     - backend-server
+  #     - frontend-server
+  #   restart: always
   
   appserver:
     build:

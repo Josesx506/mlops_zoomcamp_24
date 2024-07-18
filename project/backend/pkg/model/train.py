@@ -183,7 +183,8 @@ def training_pipeline(train_dt:dict={"start":"2023-01-01",
                                      "end":"2023-01-02"},
                       test_dt:dict={"start":"2023-03-01",
                                     "end":"2023-03-02"},
-                      random_state=42):
+                      random_state=42,
+                      hyperparameter_tuning=True):
     """
     Merge the entire pipeline.
     The steps executed by this pipeline are
@@ -212,39 +213,43 @@ def training_pipeline(train_dt:dict={"start":"2023-01-01",
     # Run hyperparameters tuning on the best models
     model_options = load_all_models()
     model_names = [type(md_cls()).__name__ for md_cls in model_options]
-    for model_dict in top_3_mods:
-        params_space = model_hyperparameters(model_dict["model_class"], 
-                                             random_state=random_state)
-        target_model = model_options[model_names.index(model_dict["model_class"])]
 
-        def __objective__(params):
-            """
-            Objective function to finetune the model hyperparameters
-            """
-            with mlflow.start_run():
-                mlflow.set_tag("model_class", model_dict["model_class"])
-                mlflow.log_params(params)
+    if hyperparameter_tuning:
+        for model_dict in top_3_mods:
+            params_space = model_hyperparameters(model_dict["model_class"], 
+                                                random_state=random_state)
+            target_model = model_options[model_names.index(model_dict["model_class"])]
 
-                model = target_model(**params)
-                pipeln = make_pipeline(model)
+            def __objective__(params):
+                """
+                Objective function to finetune the model hyperparameters
+                """
+                with mlflow.start_run():
+                    mlflow.set_tag("model_class", model_dict["model_class"])
+                    mlflow.log_params(params)
 
-                pipeln.fit(Xtrain,ytrain)
+                    model = target_model(**params)
+                    pipeln = make_pipeline(model)
 
-                ypred = pipeln.predict(Xtest)
+                    pipeln.fit(Xtrain,ytrain)
 
-                rmse = root_mean_squared_error(ytest, ypred)
-                mse = mean_squared_error(ytest, ypred)
+                    ypred = pipeln.predict(Xtest)
 
-                mlflow.log_metric("rmse", rmse)
-                mlflow.log_metric("mse", mse)
-                
-            return dict(loss=rmse, status=STATUS_OK)
+                    rmse = root_mean_squared_error(ytest, ypred)
+                    mse = mean_squared_error(ytest, ypred)
 
-        best_result = fmin(fn=__objective__,
-                           space=params_space,
-                           algo=tpe.suggest,
-                           max_evals=10,
-                           trials=Trials())
+                    mlflow.log_metric("rmse", rmse)
+                    mlflow.log_metric("mse", mse)
+                    
+                return dict(loss=rmse, status=STATUS_OK)
+
+            best_result = fmin(fn=__objective__,
+                            space=params_space,
+                            algo=tpe.suggest,
+                            max_evals=10,
+                            trials=Trials())
+    else:
+        pass
     
     print(f"{format_time()}: Registering best model  ........")
     register_best_model()

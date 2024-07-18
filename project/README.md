@@ -1,10 +1,24 @@
 ### Project Description
 This project aims to predict the number of motor vehicle incidents based on `location_id | dayOfWeek | hourOfDay` in NYC. This can provide crash history alerts to drivers at the start of their journey (by modeling a preferred route between two points in this simple implementation) or dynamic alerts based on proximity to a specific location as the crow flies on their chosen routes. The project idea was inspired by a [Waze alert](https://blog.google/waze/crash-history-alerts-arrive-to-the-waze-map/) that I got on a recent journey.
 
+### Content
+- [Dataset](#dataset)
+- [Simplified Docker Environment Setup](#simplified-docker-environment-setup)
+- [Manual Environment Setup](#manual-environment-setup)
+- [Unit and Integration Testing](#unit-and-integration-testing)
+- [Serving Static Predictions](#serving-predictions-with-docker-and-pretrained-model)
+- [Serving Predictions with Orchestration](#serving-the-predictions-with-a-trainingretraining-pipeline-for-remote-deployment)
+- Useful tools and tips
+  - [frontend](#frontend-tools)
+  - [backend](#backend-tools)
+  - [docker](#docker-tips)
+
+
+
 ### Dataset
 Motor Vehicle Collision [MVC](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95/about_data) is obtained from the NYC opendata api. The [api](https://data.cityofnewyork.us/resource/h9gi-nx95.json) is limited to only 1000 rows, so data is chunked at daily intervals. For simplicity, only entries with longitude and latitude are used within the workflow.
 
-### Setup Overview
+### Simplified Docker Environment Setup
 The project has 3 major components, a backend for training the model, a web server (gunicorn) for serving the predictions, and a frontend for accessing the webserver. Considering the complexity of setting up each individual component, the major components were containerized into a different docker services that share the same internal networks. <br>
 
 <p align="center">
@@ -31,10 +45,47 @@ Activate the environment in your terminal with `source .env` (for mac and linux)
 | appserver | http://localhost:8536 | 2.31 |
 | webpack | http://localhost:9300 | 0.29 |
 
-For the 6 services, only ***Adminer,Mlflow, Grafana, and Webpack*** have a visible UI when you click the link. 
+For the 6 services, only ***Adminer,Mlflow, Grafana, and Webpack*** have a visible UI when you click the link.
 
-#### Testing the functionality
-To test the predictons from the model, you only need the `appserver` and `webpack` services. Comment out the other services in the `docker-compose.yaml` file to avoid errors. `appserver` has a saved model artifact from previous hyperparameter tuning runs that is hosted on a gunicorn server to generate traffic incident predictions. `webpack` service has a simple webpack dev-server frontend for sending queries to the server. <br>
+### Manual Environment Setup
+Run `make setup` to install the backend environment and dependencies. This installs all the poetry dependencies. Run `make train` to start an mlflow server, create a simple training pipeline, and launch a gunicorn server with the best model from the training step to serve predictions. Once the server is up and running, you can query the server using curl like
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{
+  "coords": {
+    "start-address": {
+      "lng": "-73.7793733748521",
+      "lat": "40.642947899999996"
+    },
+    "end-address": {
+      "lng": "-74.0098809",
+      "lat": "40.706619"
+    }
+  }, 
+  "cutoff": "3"
+}' http://0.0.0.0:8534/predict_collisions
+```
+> You will have to kill the gunicorn server manaully when you're done if you implement this step. This isn't tested on Windows.
+Example
+```bash
+# Look for the process that has "--bind 0.0.0.0:8534 pkg.app.server:app" and get the starting id
+pgrep -fl gunicorn
+kill 11894
+```
+
+<br>
+
+For the frontend, navigate to the frontend directory with `cd ../frontend`. Make sure you have `node` and `npm` installed. Install the packages and start the front end server with
+```bash
+npm install
+npm run serve 
+```
+Ensure port 9300 is available and click on http://localhost:9300/ to access the frontend. Then you can test routes for collision responses. If it only returns the routes, the number of collision incidents in that hour is less than the default high-cutoff of 3 events per hour. Exit the frontend server with `Ctrl + C`.
+
+### Unit and Integration Testing
+Run the integration tests with `make integration_test`. This requires docker, spins up a localStorage and mlfow image, tests the data request and training pipeline before cleaning up the containers and environment. The integration test runs internal unit tests.
+
+### Serving Predictions with Docker and Pretrained Model
+To serve the predictons from the model, you only need the `appserver` and `webpack` services. Comment out the other services in the `docker-compose.yaml` file to avoid running into *out of memory errors*. `appserver` has a saved model artifact from previous hyperparameter tuning runs that is hosted on a gunicorn server to generate traffic incident predictions. `webpack` service has a simple webpack dev-server frontend for sending queries to the server. <br>
 
 The concept of the problem is you search for two locations in New York within the address form and click on the `check route` button. 
 <p align="center">
@@ -68,7 +119,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 This returns a json with 3 keys `boroughs | incidents | route` that contains the names of high risk boroughs, predicted incidents, and the route geojson that is plotted. If there are no incidents, the first 2 keys are empty.
 > The route calculation step is relatively slow so it might be a couple of seconds (~5s) to get a response.
 
-#### MLOps functionality
+### Serving the Predictions with a Training/Retraining Pipeline for remote deployment
 The prior two container services (`appserver` & `webpack`) have no training/orchestration functionality and mainly represent the deployment step. Running the 6 services simulataneously requires significant storage space, so you make sure your local/remote instance has a enough storage to avoid build errors. In my tests, I either ran the the first 4 services for *training*, *orchestration*, and *monitoring* separately, or the 2 services for demonstrating the functionality. <br>
 
 The training pipeline is saved within the `mlserver` service in the docker-compose file. The service uses the postgres `db` service for storing mlflow records and saves the artifacts to an s3 bucket.  If you don't want s3, you can modify the `docker-compose.yaml` file, and remove the `--default-artifact-root` argument from the command step of the *mlflow service*. This can limit other steps like orchestration etc.
@@ -126,14 +177,12 @@ The frontend server can be started by navigating to the `frontend` directory. In
 - Connect to the server using the instances public IP address. It should look something like `http://ec2-100-26-136-60.compute-1.amazonaws.com:5000`.
     > Note: `http://` should be used instead of `https://`. No **s** unless it won't connect.
 
-<br><br>
-
 If you want to run tests locally:
 - Poetry was used for package management. Run `make setup` to install all the requirements.
 - To convert the poetry `pyproject.toml` to `requirements.txt`, run `poetry export --without-hashes --format=requirements.txt > requirements.txt`. <br>
 
 ToDO checklist
-- [ ] check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
+- [x] check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
 
 ### Docker Tips
 - You can edit a container running a service without shutting down the entrire network of services.

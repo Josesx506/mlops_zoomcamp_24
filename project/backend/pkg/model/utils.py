@@ -17,10 +17,13 @@ def remove_local_artifacts():
     proj_dir = file_dir.parents[1]
 
     unwanted_fols = ["mlartifacts","mlruns"]
+    unwanted_file = f"{proj_dir}/mlflow.db"
 
     for fol in unwanted_fols:
         if os.path.exists(f"{proj_dir}/{fol}"):
             rmtree(Path(f"{proj_dir}/{fol}"))
+    if os.path.isfile(f"{unwanted_file}"):
+        os.system(f"rm {unwanted_file}")
     
     for root, dirs, files in os.walk(proj_dir, topdown=False):
         if "__pycache__" in root:
