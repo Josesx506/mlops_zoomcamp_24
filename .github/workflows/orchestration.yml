@@ -40,7 +40,7 @@ jobs:
           git add .
           git diff --staged --quiet || echo "changes=true" >> $GITHUB_ENV 
       - name: Commit and push if changes
-        if: env.changes == "true" # if changes made push new data to repo
+        if: env.changes == 'true' # if changes made push new data to repo
         run: |
           git commit -m "updated model training"
           git push
