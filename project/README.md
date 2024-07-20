@@ -1,10 +1,24 @@
 ### Project Description
-This project aims to predict the number of motor vehicle incidents based on `location_id | dayOfWeek | hourOfDay` in NYC. This can provide crash history alerts to drivers at the start of their journey (by modeling a preferred route between two points in this simple implementation) or dynamic alerts based on proximity to a specific location as the crow flies on their chosen routes. The project idea was inspired by a [Waze alert](https://blog.google/waze/crash-history-alerts-arrive-to-the-waze-map/) that I got on a recent journey.
+This project aims to predict the number of motor vehicle incidents based on `location_id | dayOfWeek | hourOfDay` in NYC. This can provide crash history alerts to drivers at the start of their journey (by modeling a preferred route between two points in this simple implementation) or dynamic alerts based on proximity to a specific location as the crow flies along their chosen routes. The project idea was inspired by a [Waze alert](https://blog.google/waze/crash-history-alerts-arrive-to-the-waze-map/) that I got on a recent journey.
 
 ### Live Deployment
-You can view some of the live links for serving predictions. This is currently open to the public for grading purposes but can be closed for private development.
-- mlflow server at http://34.228.105.45:5150. 
-- nyc-map for serving the model on frontend http://34.228.105.45:9300.
+You can view some of the live links with active models for serving predictions. This is currently open to the public for grading purposes but will be closed after evaluation.
+- [mlflow server link](http://34.228.105.45:5150). 
+- nyc-map for serving the model predictions on [frontend server](http://34.228.105.45:9300).
+
+The concept of the problem is for the user to search for two locations in New York within the address form and click on the `check route` button. 
+<p align="center">
+  <span><img src="figures/empty_search.png" style="width: 200px; height: 100px;">
+  <img src="figures/search_bar.png" style="width: 200px; height: 100px;"></span><br>
+  <span>Search for an address.</span>
+</p>
+The addresses are geocoded by the frontend and the coordinates are sent to the backend server. The server traces the driving route to both destinations using OpenStreetMaps road network, and finds all the intersecting boroughs along your route. The time of the day, day of the week, and location_ids are used to predict the number of incidents at that time of the day. <br>
+Boroughs with a prediction of more than 3 incidents per hour are shaded in red on the map (as having higher risk of incidents at that time of the day/day of week) and the route between both points is plotted. The names of any boroughs can be visualized by clicking on them.
+<p align="center">
+  <img src="figures/example_results.png" style="width: 600px; height: 350px; padding:10px"><br>
+  <span>High risk boroughs for travel along route in NY local time.</span>
+</p><br>
+
 > There are some bugs with how errors are handled in the server logic so sometimes it doesn't give a response if nan values are encountered in the location_ids. You can try curl to get explicit errors or use popular places in new york for testing. Also make sure the two markers are within the valid locations on the map. It was designed to meet the mlops implementation workflow, and the web server logic is still a bit buggy.
 
 ### Content
@@ -23,10 +37,10 @@ You can view some of the live links for serving predictions. This is currently o
 
 
 ### Dataset
-Motor Vehicle Collision [MVC](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95/about_data) is obtained from the NYC opendata api. The [api](https://data.cityofnewyork.us/resource/h9gi-nx95.json) is limited to only 1000 rows, so data is chunked at daily intervals. For simplicity, only entries with longitude and latitude are used within the workflow.
+Motor Vehicle Collision *([MVC](https://data.cityofnewyork.us/Public-Safety/Motor-Vehicle-Collisions-Crashes/h9gi-nx95/about_data))* data is obtained from the NYC opendata api. The [api](https://data.cityofnewyork.us/resource/h9gi-nx95.json) is limited to only 1000 rows, so data is chunked at daily intervals. For simplicity, only entries with longitude and latitude are used within the workflow.
 
 ### Simplified Docker Environment Setup
-The project has 3 major components, a backend for training the model, a web server (gunicorn) for serving the predictions, and a frontend for accessing the webserver. Considering the complexity of setting up each individual component, the major components were containerized into a different docker services that share the same internal networks. <br>
+The project has 3 major components, a backend for training the model, a web server (gunicorn) for serving the predictions, and a frontend for accessing the webserver. Considering the complexity of setting up each individual component, the major components were containerized into a different docker services that share the same internal networks. The desired ports were then exposed to the localhost, and served by reverse-proxy on remote EC2 instances.<br>
 
 <p align="center">
   <img src="figures/MLOps_Zoomcamp_Architecture.png" style="width: 420px; height: 350px; background-color: #ffffff; padding:10px"><br>
@@ -60,7 +74,11 @@ For the 6 services, only ***Adminer,Mlflow, Grafana, and Webpack*** have a visib
 - Add Repository secrets to `https://github.com/user/repo_name/settings/secrets/actions`
   - [Generate personal access tokens](https://github.com/settings/apps)
   - Include additional secrets for mlflow server address and aws secret keys
-- Schecule it a s a cron job for 28th of each month.
+- Schecule it as a cron job that runs on the 28th of each month.
+<p align="center">
+  <img src="figures/Orchestration_steps.png" style="width: 600px; height: 300px; padding:10px"><br>
+  <span>Completed orchestration workflow for remote mlflow server.</span>
+</p><br>
 
 ### Manual Environment Setup
 Run `make setup` to install the backend environment and dependencies. This installs all the poetry dependencies. Run `make train` to start an mlflow server, create a simple training pipeline, and launch a gunicorn server with the best model from the training step to serve predictions. Once the server is up and running, you can query the server using curl like
@@ -96,24 +114,8 @@ npm run serve
 ```
 Ensure port 9300 is available and click on http://localhost:9300/ to access the frontend. Then you can test routes for collision responses. If it only returns the routes, the number of collision incidents in that hour is less than the default high-cutoff of 3 events per hour. Exit the frontend server with `Ctrl + C`.
 
-### Unit and Integration Testing
-Run the integration tests with `make integration_test`. This requires docker, spins up a localStorage and mlfow image, tests the data request and training pipeline before cleaning up the containers and environment. The integration test runs internal unit tests.
-
 ### Serving Predictions with Docker and Pretrained Model
-To serve the predictons from the model, you only need the `appserver` and `webpack` services. Comment out the other services in the `docker-compose.yaml` file to avoid running into *out of memory errors*. `appserver` has a saved model artifact from previous hyperparameter tuning runs that is hosted on a gunicorn server to generate traffic incident predictions. `webpack` service has a simple webpack dev-server frontend for sending queries to the server. <br>
-
-The concept of the problem is you search for two locations in New York within the address form and click on the `check route` button. 
-<p align="center">
-  <span><img src="figures/empty_search.png" style="width: 200px; height: 100px;">
-  <img src="figures/search_bar.png" style="width: 200px; height: 100px;"></span><br>
-  <span>Search for an address.</span>
-</p>
-The addresses are geocoded by the frontend and the coordinates are sent to the backend server. The server traces the driving route to both destinations using OpenStreetMaps road network, and finds all the intersecting boroughs along your route. The time of the day, day of the week, and location_ids are used to predict the number of incidents at that time of the day. <br>
-Boroughs with a prediction of more than 3 incidents per hour are shaded in red on the map (as having higher risk of incidents at that time of the day/day of week) and the route between both points is plotted. The names of any boroughs can be visualized by clicking on them.
-<p align="center">
-  <img src="figures/example_results.png" style="width: 600px; height: 350px; padding:10px"><br>
-  <span>High risk boroughs for travel along route in NY local time.</span>
-</p><br>
+To serve the predictons from the model, you only need the `appserver` and `webpack` services. Comment out the other services in the `docker-compose.yaml` file to avoid running into *out of memory errors*. `appserver` has a saved model artifact from a previous hyperparameter tuning run that is hosted on a gunicorn server to generate traffic incident predictions. `webpack` service has a simple webpack dev-server frontend for sending queries to the server. <br>
 
 If you don't want to use the frontend, you can also query the server using curl or postman. An example curl query is 
 ```bash
@@ -168,6 +170,9 @@ services:
     - confirms if the new data is long enough to train the model (2 months for training, one month for validation) before triggering the training pipeline.
     - It can be setup as a cron job for a weekly/biweekly schedule.
 
+### Unit and Integration Testing
+Run the integration tests with `make integration_test`. This requires docker, spins up a localStorage and mlfow image, tests the data request and training pipeline before cleaning up the containers and environment. The integration test runs internal unit tests.
+
 ### Frontend Tools
 Frontend was developed using JS, and bundled with webpack. Additional npm packages were obtained from
 - [x] [Maps](https://leafletjs.com/)
@@ -208,8 +213,8 @@ When deploying it on an EC2, different things started to break. For starters,
   - https://docs.docker.com/compose/install/standalone/
   - https://docs.docker.com/engine/install/linux-postinstall/
 - You can also [increase your ec2 storage](https://stackoverflow.com/questions/66773832/increase-ec2-disk-storage-without-losing-any-data) without shutting down your instance.
-- I ditched the adminer, grafana, and mlflow services from the docker compose container. Python containers are large, so I ran my mlflow server inside the same `mlserver` service as the gunicorn server. Saved 2.5gb of required memory compared to keeping the mlflow server isolated.
-- Since it was containerized, I didn't have to install `poetry` remotely but if you want to, do `sudo apt install pipx`, then `pipx install poetry`. Install pipx with pip doesnt work and I was getting an error no command named pipx.
+- I ditched the adminer, grafana, and mlflow services from the docker compose container, they can be tested locally. Python containers are large, so I ran my mlflow server inside the same docker-compose `mlserver` service as the gunicorn server. Saved 2.5gb of required memory compared to keeping the mlflow server in an isolated container.
+- Since it was containerized, I didn't have to install `poetry` remotely but if you want to, do `sudo apt install pipx`, then `pipx install poetry`. The maketools setup was designed for a local macbook. Install pipx with pip doesnt work and I was getting an error no command named pipx.
 - The frontend server could not access localhost when deployed so I had to use `nginx` to reverse proxy the fetch request.
 - Lowered the incident cutoff in the frontend service from 3 events per borough/hour to 1.5 so that it shows some functionality throughout the day. Else it would keep looking like it's just calculating routes between points.
 - Updated the environmental variables in the docker-compose file to point to the reverse proxied address 

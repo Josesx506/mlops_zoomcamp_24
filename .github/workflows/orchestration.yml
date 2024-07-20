@@ -1,7 +1,7 @@
 name: orchestration-pipeline-workflow
 
 on:
-  push: # uncomment to run on push
+  # push: # uncomment to run on push
   schedule:
     - cron: "0 0 28 * *" # run at 12:00AM on 28th day of each month
   workflow_dispatch:  # manual triggers
