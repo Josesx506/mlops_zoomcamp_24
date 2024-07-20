@@ -30,7 +30,8 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
           EXPERIMENT_NAME: ${{ secrets.EXPERIMENT_NAME }}
-        run: 
+        run:
+          export PYTHONPATH=$PYTHONPATH:/backend
           python pkg/model/retraining.py # run orchestration pipeline
       - name: Check for changes # create env variable indicating if any changes were made
         id: git-check
