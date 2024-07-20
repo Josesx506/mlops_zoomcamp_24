@@ -27,15 +27,23 @@ prefect = "^2.19.8"
 evidently = "^0.4.31"
 psycopg = "^3.2.1"
 setuptools = "^70.3.0"
-
 flask-cors = "^4.0.1"
 networkx = "^3.3"
+
 [tool.poetry.group.dev.dependencies]
 isort = "^5.13.2"
 black = "^24.4.2"
 pre-commit = "^3.7.1"
 pytest = "^8.2.2"
 seaborn = "^0.13.2"
+
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+
+[tool.isort]
+length_sort = true
+profile = "black"
 
 [build-system]
 requires = ["poetry-core"]

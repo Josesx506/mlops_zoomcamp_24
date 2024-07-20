@@ -19,6 +19,7 @@ Boroughs with a prediction of more than 3 incidents per hour are shaded in red o
   <span>High risk boroughs for travel along route in NY local time.</span>
 </p><br>
 
+> [!NOTE] 
 > There are some bugs with how errors are handled in the server logic so sometimes it doesn't give a response if nan values are encountered in the location_ids. You can try curl to get explicit errors or use popular places in new york for testing. Also make sure the two markers are within the valid locations on the map. It was designed to meet the mlops implementation workflow, and the web server logic is still a bit buggy.
 
 ### Content
@@ -79,6 +80,9 @@ For the 6 services, only ***Adminer,Mlflow, Grafana, and Webpack*** have a visib
   <img src="figures/Orchestration_steps.png" style="width: 600px; height: 300px; padding:10px"><br>
   <span>Completed orchestration workflow for remote mlflow server.</span>
 </p><br>
+
+### Linting
+Precommit styles are configured in the `backend/pyproject.toml` file but not included in the .github folder because of the rest of the files used throughout the course. It was easier to manage this within this repo vs. creating a new repo for only the class
 
 ### Manual Environment Setup
 Run `make setup` to install the backend environment and dependencies. This installs all the poetry dependencies. Run `make train` to start an mlflow server, create a simple training pipeline, and launch a gunicorn server with the best model from the training step to serve predictions. Once the server is up and running, you can query the server using curl like
