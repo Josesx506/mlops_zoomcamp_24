@@ -1,0 +1,46 @@
+name: orchestration-pipeline-workflow
+
+on:
+  push: # uncomment to run on push
+  schedule:
+    - cron: "0 0 28 * *" # run at 12:00AM on 28th day of each month
+  workflow_dispatch:  # manual triggers
+
+jobs:
+  run-orchestration-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo content
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}  # Use the PAT instead of the default GITHUB_TOKEN
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install dependencies
+        working-directory: ./project/backend
+        run: pip install -r requirements.txt
+      - name: Run retraining pipeline
+        working-directory: ./project/backend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+          EXPERIMENT_NAME: ${{ secrets.EXPERIMENT_NAME }}
+        run: 
+          python pkg/model/retraining.py # run orchestration pipeline
+      - name: Check for changes # create env variable indicating if any changes were made
+        id: git-check
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add .
+          git diff --staged --quiet || echo "changes=true" >> $GITHUB_ENV 
+      - name: Commit and push if changes
+        if: env.changes == "true" # if changes made push new data to repo
+        run: |
+          git commit -m "updated model training"
+          git push

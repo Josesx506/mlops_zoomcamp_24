@@ -20,6 +20,10 @@ project/backend/.env
 project/backend/mlartifacts
 project/backend/mlruns
 
+.DS_Store
+*/.DS_Store
+*/*/.DS_Store
+
 __pycache__
 */__pycache__
 */*/__pycache__

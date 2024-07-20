@@ -1,6 +1,12 @@
 ### Project Description
 This project aims to predict the number of motor vehicle incidents based on `location_id | dayOfWeek | hourOfDay` in NYC. This can provide crash history alerts to drivers at the start of their journey (by modeling a preferred route between two points in this simple implementation) or dynamic alerts based on proximity to a specific location as the crow flies on their chosen routes. The project idea was inspired by a [Waze alert](https://blog.google/waze/crash-history-alerts-arrive-to-the-waze-map/) that I got on a recent journey.
 
+### Live Deployment
+You can view some of the live links for serving predictions. This is currently open to the public for grading purposes but can be closed for private development.
+- mlflow server at http://34.228.105.45:5150. 
+- nyc-map for serving the model on frontend http://34.228.105.45:9300.
+> There are some bugs with how errors are handled in the server logic so sometimes it doesn't give a response if nan values are encountered in the location_ids. You can try curl to get explicit errors or use popular places in new york for testing. Also make sure the two markers are within the valid locations on the map. It was designed to meet the mlops implementation workflow, and the web server logic is still a bit buggy.
+
 ### Content
 - [Dataset](#dataset)
 - [Simplified Docker Environment Setup](#simplified-docker-environment-setup)
@@ -12,7 +18,8 @@ This project aims to predict the number of motor vehicle incidents based on `loc
   - [frontend](#frontend-tools)
   - [backend](#backend-tools)
   - [docker](#docker-tips)
-
+  - [live deployment learnings](#live-deployment-learnings)
+  - [reverse proxy nginx](#reverse-proxy-with-nginx)
 
 
 ### Dataset
@@ -46,6 +53,14 @@ Activate the environment in your terminal with `source .env` (for mac and linux)
 | webpack | http://localhost:9300 | 0.29 |
 
 For the 6 services, only ***Adminer,Mlflow, Grafana, and Webpack*** have a visible UI when you click the link.
+
+### Orchestration
+- [Setup python in github actions](https://github.com/actions/setup-python)
+  - Cache the pip install to reduce reinstallation time whenever the script is run
+- Add Repository secrets to `https://github.com/user/repo_name/settings/secrets/actions`
+  - [Generate personal access tokens](https://github.com/settings/apps)
+  - Include additional secrets for mlflow server address and aws secret keys
+- Schecule it a s a cron job for 28th of each month.
 
 ### Manual Environment Setup
 Run `make setup` to install the backend environment and dependencies. This installs all the poetry dependencies. Run `make train` to start an mlflow server, create a simple training pipeline, and launch a gunicorn server with the best model from the training step to serve predictions. Once the server is up and running, you can query the server using curl like
@@ -148,7 +163,7 @@ services:
     - **Note:** Docker kept running out of memory if the `appserver` and `mlserver` gunicorn servers were launched simultaneously and it usually kills one so I ran only one service at a time.
     - It takes a while for this server to become available because it first trains the model each time the service is started before it serves the best model from hyperparameter tuning.
     - If the prediction server is switched, update the frontend service without shutting down the whole network by rebuilding the container using `docker-compose up -d --no-deps --build <service_name>`, where the *<service_name>* is `webpack`
-4. Orchestration is only performed if the service is hosted on a remote instance using ***`Github Actions`***. The size of existing containers were already too large to support adding *`mage`* to the network of containers. Orchestration is run in batch mode using a scheduled github action script.
+4. Orchestration is only performed if the service is hosted on a remote instance using ***`Github Actions`***. The size of existing containers were already too large to support adding *`mage`* to the network of containers. Orchestration is run in batch mode using a scheduled github action script `.gitub/actions/orchestration.yml`.
     - The script checks if there's new data available in the nyc open data api,
     - confirms if the new data is long enough to train the model (2 months for training, one month for validation) before triggering the training pipeline.
     - It can be setup as a cron job for a weekly/biweekly schedule.
@@ -184,6 +199,86 @@ If you want to run tests locally:
 ToDO checklist
 - [x] check that the postgres password in the docker-compose file matches the one in the grafana `config/grafana_datasources.yaml` file
 
+### Live Deployment learnings
+When deploying it on an EC2, different things started to break. For starters, 
+- I had to use a `t2.xlarge` instance with 4 cpus and 16 gb of ram to host it. Smaller instances kept crashing.
+- The public ip kept changing so I attached an elastic ip for an additional fee. The elastic ip was then associated with the instance.
+- Setting up docker on EC2. Check these 3 pages in this order to install docker, docker-compose and add a user group post-installation
+  - https://docs.docker.com/engine/install/ubuntu/
+  - https://docs.docker.com/compose/install/standalone/
+  - https://docs.docker.com/engine/install/linux-postinstall/
+- You can also [increase your ec2 storage](https://stackoverflow.com/questions/66773832/increase-ec2-disk-storage-without-losing-any-data) without shutting down your instance.
+- I ditched the adminer, grafana, and mlflow services from the docker compose container. Python containers are large, so I ran my mlflow server inside the same `mlserver` service as the gunicorn server. Saved 2.5gb of required memory compared to keeping the mlflow server isolated.
+- Since it was containerized, I didn't have to install `poetry` remotely but if you want to, do `sudo apt install pipx`, then `pipx install poetry`. Install pipx with pip doesnt work and I was getting an error no command named pipx.
+- The frontend server could not access localhost when deployed so I had to use `nginx` to reverse proxy the fetch request.
+- Lowered the incident cutoff in the frontend service from 3 events per borough/hour to 1.5 so that it shows some functionality throughout the day. Else it would keep looking like it's just calculating routes between points.
+- Updated the environmental variables in the docker-compose file to point to the reverse proxied address 
+  ```bash
+  x-environment: &default-environment
+    MLFLOW_TRACKING_URI: "http://127.0.0.1:5150"
+    APP_SERVER_HOST: "http://34.228.105.45:80"
+  ```
+  Hot restart only the affected *webpack* service without shutting down associated containers with `docker-compose up -d --no-deps --build webpack`
+- Updated github actions to run the retraining pipeline as part of a manual orchestration workflow. This accesses the remote mlflow server to make changes. Cron explanation from this [link](https://crontab.guru/#0_0_28_*_*).
+
+#### Reverse Proxy with NGINX
+The steps to install the server are 
+```bash
+# Install nginx
+sudo apt update
+sudo apt install nginx
+
+# Start the nginx server
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# sudo nano /etc/nginx/sites-available/mlops
+# sudo ln -s /etc/nginx/sites-available/mlops /etc/nginx/sites-enabled/
+
+# Create a configuration file for the gunicorn serve
+sudo nano /etc/nginx/mlops.conf
+# Test the nginx configuration. If the tests dont pass, it wont restart
+sudo nginx -t
+# Restart the server
+sudo systemctl restart nginx
+# sudo systemctl status nginx.service # Explicit debugging
+```
+
+The configuration file `mlops.conf` was setup as 
+```bash
+server {
+    listen 80;
+    server_name 34.228.105.45; # EC2 elastic ip address or domain name www.xxxxxx.com
+
+    location / {
+        proxy_pass http://localhost:8534; # Gunicorn address
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_a>;
+        proxy_set_header X-Forwarded-Proto $schem>;
+    }
+
+    access_log /var/log/nginx/access.log combined;
+}
+```
+
+Example of curl request to the reversed proxy address
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{
+  "coords": {
+    "start-address": {
+      "lng": "-73.7793733748521",
+      "lat": "40.642947899999996"
+    },
+    "end-address": {
+      "lng": "-74.0098809",
+      "lat": "40.706619"
+    }
+  }, 
+  "cutoff": "3"
+}' http://34.228.105.45:80/predict_collisions
+```
+
 ### Docker Tips
 - You can edit a container running a service without shutting down the entrire network of services.
     - `docker-compose up -d --no-deps --build <service_name>`
@@ -197,3 +292,8 @@ ToDO checklist
         - `docker run --rm -p 8536:8536 statserver:v1`
     - Run a built image in interactive mode and access its bash terminal
         - `docker run --rm -ti -t statserver:v1 bash`
+- You can view the logs for an docker-compose service to see an error e.g. `docker-compose logs mlserver` for a failed fetch request returns
+    ```bash
+    mlserver-1  | ValueError: cannot convert float NaN to integer: Error while type casting for column 'location_id'
+    ```
+    This lets me know a location_id was not found for an address. The frontend could do better with the error codes
