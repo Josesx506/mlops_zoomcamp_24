@@ -43,7 +43,8 @@ def create_app(ml_model,shp_file):
         bourough_ids = sjoin(points, shp, how="left", predicate="within")
         bourough_ids["dowk"] = cur_time.weekday()
         bourough_ids["hour"] = cur_time.hour
-        filt_boroughs = bourough_ids.drop_duplicates(subset=["location_id"]).reset_index(drop=True)
+        filt_boroughs = bourough_ids.drop_duplicates(subset=["location_id"])
+        filt_boroughs = filt_boroughs.dropna(subset="location_id").reset_index(drop=True)
         features = filt_boroughs[["location_id", "dowk", "hour"]]
         features = features.astype({"location_id":int, "dowk":int, "hour":int})
         zones = filt_boroughs["zone"].to_list()
