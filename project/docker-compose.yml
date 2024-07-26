@@ -15,6 +15,10 @@ x-environment: &default-environment
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_KEY}
   AWS_DEFAULT_REGION: ${AWS_Zone}
   S3_URI: ${S3_URI}
+  PREFECT_API_URL: "http://127.0.0.1:4200/api"
+  PREFECT_UI_URL: "http://127.0.0.1:4200/api"
+  PREFECT_SERVER_API_HOST: "0.0.0.0"
+  PREFECT_API_DATABASE_CONNECTION_URL: "postgresql://postgres:zmcp24@db:5432/prefectdb"
 
 services:
   # adminer:
@@ -80,6 +84,17 @@ services:
   #     - backend-server
   #     - frontend-server
   #   restart: always
+
+  # prefect:
+  #   image: prefecthq/prefect:2-python3.11
+  #   restart: always
+  #   ports:
+  #     - "4250:4200"
+  #   environment:
+  #     <<: *default-environment
+  #   command: prefect server start
+  #   networks:
+  #     - backend-server
   
   appserver:
     build:
