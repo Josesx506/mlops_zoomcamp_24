@@ -1,6 +1,8 @@
 #!/bin/bash
 export PYTHONPATH=$PYTHONPATH:/app
 
+# mlflow server -h 0.0.0.0 -p 5150 --backend-store-uri=postgresql://postgres:zmcp24@db:5432/mlflowdb --default-artifact-root=${S3_URI} &
+
 # Run the training script
 python pkg/model/train.py
 

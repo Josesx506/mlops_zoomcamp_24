@@ -1,6 +1,7 @@
 # Start a docker container to simulate AWS services with localstack
 docker run --rm -d --name localstack_test_cntr -p 4569:4566 -e "SERVICES=s3" localstack/localstack
 docker run --rm -d --name mlflow_test -p 5300:5000 ghcr.io/mlflow/mlflow mlflow server --host 0.0.0.0
+# docker run --rm -d --name prefect_test -p 4250:4200 prefecthq/prefect:2-python3.11 sh -c "prefect server start --host 0.0.0.0 --port 4200"
 
 # Create an environment variable for the python files
 export S3_ENDPOINT_URL="http://localhost:4569/"
@@ -41,3 +42,4 @@ fi
 # Shut down the container
 docker stop localstack_test_cntr
 docker stop mlflow_test
+# docker stop prefect_test

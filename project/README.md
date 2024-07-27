@@ -5,6 +5,7 @@ This project aims to predict the number of motor vehicle incidents based on `loc
 You can view some of the live links with active models for serving predictions. This is currently open to the public for grading purposes but will be closed after evaluation.
 - [mlflow server link](http://34.228.105.45:5150). 
 - nyc-map for serving the model predictions on [frontend server](http://34.228.105.45:9300).
+- [x] Grading should have been completed and the live server has been shut down (07/27/2024)
 
 The concept of the problem is for the user to search for two locations in New York within the address form and click on the `check route` button. 
 <p align="center">
